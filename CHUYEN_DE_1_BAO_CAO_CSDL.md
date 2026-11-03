@@ -1,54 +1,54 @@
-﻿# B├üO C├üO Hß╗îC PHß║ªN: CHUY├èN ─Éß╗Ç 1 - KHAI TH├üC Hß╗å C╞á Sß╗₧ Dß╗« LIß╗åU
-**M├â Hß╗îC PHß║ªN:** INT51309 (6 T├ìN CHß╗ê)  
-**TR╞»ß╗£NG:** ─Éß║áI Hß╗îC V─éN HIß║╛N - KHOA C├öNG NGHß╗å TH├öNG TIN  
-**GIß║óNG VI├èN H╞»ß╗ÜNG Dß║¬N:** THß║ªY L╞»╞áNG TH├üI HIß╗ÇN  
-**─Éß╗Ç T├ÇI:** THIß║╛T Kß║╛, Tß╗ÉI ╞»U V├Ç KHAI TH├üC C╞á Sß╗₧ Dß╗« LIß╗åU Hß╗å THß╗ÉNG QUß║óN L├¥ KH├üCH Sß║áN AN NHI├èN  
-**Hß╗å QUß║óN TRß╗è CSDL:** POSTGRESQL 15+ / SUPABASE CLOUD  
+# BÁO CÁO HỌC PHẦN: CHUYÊN ĐỀ 1 - KHAI THÁC HỆ CƠ SỞ DỮ LIỆU
+**MÃ HỌC PHẦN:** INT51309 (6 TÍN CHỈ)  
+**TRƯỜNG:** ĐẠI HỌC VĂN HIẾN - KHOA CÔNG NGHỆ THÔNG TIN  
+**GIẢNG VIÊN HƯỚNG DẪN:** THẦY LƯƠNG THÁI HIỀN  
+**ĐỀ TÀI:** THIẾT KẾ, TỐI ƯU VÀ KHAI THÁC CƠ SỞ DỮ LIỆU HỆ THỐNG QUẢN LÝ KHÁCH SẠN AN NHIÊN  
+**HỆ QUẢN TRỊ CSDL:** POSTGRESQL 15+ / SUPABASE CLOUD  
 
 ---
 
-## ≡ƒôæ Mß╗ñC Lß╗ñC
-1. [GIß╗ÜI THIß╗åU B├ÇI TO├üN & PHß║áM VI Hß╗å THß╗ÉNG](#1-giß╗¢i-thiß╗çu-b├ái-to├ín--phß║ím-vi-hß╗ç-thß╗æng)
-2. [M├ö H├îNH THß╗░C THß╗é - Mß╗ÉI QUAN Hß╗å (ERD)](#2-m├┤-h├¼nh-thß╗▒c-thß╗â---mß╗æi-quan-hß╗ç-erd)
-3. [Tß╗¬ ─ÉIß╗éN Dß╗« LIß╗åU & R├ÇNG BUß╗ÿC TO├ÇN Vß║╕N (DATA DICTIONARY)](#3-tß╗½-─æiß╗ân-dß╗»-liß╗çu--r├áng-buß╗Öc-to├án-vß║╣n-data-dictionary)
-4. [CHß╗¿NG MINH CHUß║¿N H├ôA Dß╗« LIß╗åU (1NF - 2NF - 3NF)](#4-chß╗⌐ng-minh-chuß║⌐n-h├│a-dß╗»-liß╗çu-1nf---2nf---3nf)
-5. [Tß╗░ ─Éß╗ÿNG H├ôA Vß╗ÜI TRIGGERS (PL/pgSQL)](#5-tß╗▒-─æß╗Öng-h├│a-vß╗¢i-triggers-plpgsql)
-6. [THß╗ª Tß╗ñC & H├ÇM NGHIß╗åP Vß╗ñ (STORED PROCEDURES & FUNCTIONS)](#6-thß╗º-tß╗Ñc--h├ám-nghiß╗çp-vß╗Ñ-stored-procedures--functions)
-7. [KHAI TH├üC Dß╗« LIß╗åU ─ÉA CHIß╗ÇU (ANALYTIC VIEWS)](#7-khai-th├íc-dß╗»-liß╗çu-─æa-chiß╗üu-analytic-views)
-8. [Tß╗ÉI ╞»U H├ôA TRUY Vß║ñN Vß╗ÜI CHß╗ê Mß╗ñC (INDEXING & EXPLAIN ANALYZE)](#8-tß╗æi-╞░u-h├│a-truy-vß║Ñn-vß╗¢i-chß╗ë-mß╗Ñc-indexing--explain-analyze)
-9. [Bß║óO Mß║¼T & PH├éN QUYß╗ÇN TRUY Cß║¼P (ROLE-BASED ACCESS CONTROL - RBAC)](#9-bß║úo-mß║¡t--ph├ón-quyß╗ün-truy-cß║¡p-role-based-access-control---rbac)
-10. [H╞»ß╗ÜNG Dß║¬N THß╗░C THI & DEMO CHO Bß║óO Vß╗å ─Éß╗Æ ├üN](#10-h╞░ß╗¢ng-dß║½n-thß╗▒c-thi--demo-cho-bß║úo-vß╗ç-─æß╗ô-├ín)
+## 📑 MỤC LỤC
+1. [GIỚI THIỆU BÀI TOÁN & PHẠM VI HỆ THỐNG](#1-giới-thiệu-bài-toán--phạm-vi-hệ-thống)
+2. [MÔ HÌNH THỰC THỂ - MỐI QUAN HỆ (ERD)](#2-mô-hình-thực-thể---mối-quan-hệ-erd)
+3. [TỪ ĐIỂN DỮ LIỆU & RÀNG BUỘC TOÀN VẸN (DATA DICTIONARY)](#3-từ-điển-dữ-liệu--ràng-buộc-toàn-vẹn-data-dictionary)
+4. [CHỨNG MINH CHUẨN HÓA DỮ LIỆU (1NF - 2NF - 3NF)](#4-chứng-minh-chuẩn-hóa-dữ-liệu-1nf---2nf---3nf)
+5. [TỰ ĐỘNG HÓA VỚI TRIGGERS (PL/pgSQL)](#5-tự-động-hóa-với-triggers-plpgsql)
+6. [THỦ TỤC & HÀM NGHIỆP VỤ (STORED PROCEDURES & FUNCTIONS)](#6-thủ-tục--hàm-nghiệp-vụ-stored-procedures--functions)
+7. [KHAI THÁC DỮ LIỆU ĐA CHIỀU (ANALYTIC VIEWS)](#7-khai-thác-dữ-liệu-đa-chiều-analytic-views)
+8. [TỐI ƯU HÓA TRUY VẤN VỚI CHỈ MỤC (INDEXING & EXPLAIN ANALYZE)](#8-tối-ưu-hóa-truy-vấn-với-chỉ-mục-indexing--explain-analyze)
+9. [BẢO MẬT & PHÂN QUYỀN TRUY CẬP (ROLE-BASED ACCESS CONTROL - RBAC)](#9-bảo-mật--phân-quyền-truy-cập-role-based-access-control---rbac)
+10. [HƯỚNG DẪN THỰC THI & DEMO CHO BẢO VỆ ĐỒ ÁN](#10-hướng-dẫn-thực-thi--demo-cho-bảo-vệ-đồ-án)
 
 ---
 
-## 1. GIß╗ÜI THIß╗åU B├ÇI TO├üN & PHß║áM VI Hß╗å THß╗ÉNG
-Trong hoß║ít ─æß╗Öng vß║¡n h├ánh cß╗ºa kh├ích sß║ín hiß╗çn ─æß║íi, viß╗çc quß║ún trß╗ï c╞í sß╗ƒ dß╗» liß╗çu ─æ├▓i hß╗Åi t├¡nh nhß║Ñt qu├ín tuyß╗çt ─æß╗æi (ACID), khß║ú n─âng xß╗¡ l├╜ ─æß╗ông thß╗¥i (Concurrency Control) khi nhiß╗üu kh├ích c├╣ng ─æß║╖t buß╗ông ph├▓ng, t├¡nh to├ín chi ph├¡ tß╗▒ ─æß╗Öng (tiß╗ün ph├▓ng theo ─æ├¬m, dß╗ïch vß╗Ñ minibar, giß║╖t l├á, voucher giß║úm gi├í, trß╗½ tiß╗ün ─æß║╖t cß╗ìc), v├á cung cß║Ñp c├íc b├ío c├ío thß╗æng k├¬ ─æa chiß╗üu theo thß╗¥i gian thß╗▒c (Real-time Analytics).
+## 1. GIỚI THIỆU BÀI TOÁN & PHẠM VI HỆ THỐNG
+Trong hoạt động vận hành của khách sạn hiện đại, việc quản trị cơ sở dữ liệu đòi hỏi tính nhất quán tuyệt đối (ACID), khả năng xử lý đồng thời (Concurrency Control) khi nhiều khách cùng đặt buồng phòng, tính toán chi phí tự động (tiền phòng theo đêm, dịch vụ minibar, giặt là, voucher giảm giá, trừ tiền đặt cọc), và cung cấp các báo cáo thống kê đa chiều theo thời gian thực (Real-time Analytics).
 
-Hß╗ç thß╗æng CSDL **Quß║ún l├╜ Kh├ích sß║ín An Nhi├¬n** ─æ╞░ß╗úc thiß║┐t kß║┐ ─æß╗â giß║úi quyß║┐t to├án diß╗çn c├íc b├ái to├ín cß╗æt l├╡i:
-- Quß║ún l├╜ s╞í ─æß╗ô ph├▓ng theo tß║ºng v├á loß║íi ph├▓ng.
-- Quß║ún l├╜ kh├ích h├áng, ─æß╗ïnh danh CCCD v├á ph├ón hß║íng th├ánh vi├¬n (VIP).
-- Quß║ún l├╜ v├▓ng ─æß╗¥i ─æß║╖t ph├▓ng: *─É├ú ─æß║╖t Γ₧ö ─Éang ß╗ƒ Γ₧ö ─É├ú trß║ú (Check-out) / ─É├ú hß╗ºy*.
-- H├│a ─æ╞ín, chi tiß║┐t dß╗ïch vß╗Ñ v├á t├¡ch hß╗úp ─æa k├¬nh thanh to├ín (VNPAY-QR EMVCo, MoMo, Apple Pay, Thß║╗ POS, Tiß╗ün mß║╖t).
-- Quß║ún l├╜ m├ú giß║úm gi├í (Voucher) v├á bß║úo mß║¡t ph├ón quyß╗ün lß╗à t├ón - quß║ún trß╗ï.
+Hệ thống CSDL **Quản lý Khách sạn An Nhiên** được thiết kế để giải quyết toàn diện các bài toán cốt lõi:
+- Quản lý sơ đồ phòng theo tầng và loại phòng.
+- Quản lý khách hàng, định danh CCCD và phân hạng thành viên (VIP).
+- Quản lý vòng đời đặt phòng: *Đã đặt ➔ Đang ở ➔ Đã trả (Check-out) / Đã hủy*.
+- Hóa đơn, chi tiết dịch vụ và tích hợp đa kênh thanh toán (VNPAY-QR EMVCo, MoMo, Apple Pay, Thẻ POS, Tiền mặt).
+- Quản lý mã giảm giá (Voucher) và bảo mật phân quyền lễ tân - quản trị.
 
 ---
 
-## 2. M├ö H├îNH THß╗░C THß╗é - Mß╗ÉI QUAN Hß╗å (ERD)
+## 2. MÔ HÌNH THỰC THỂ - MỐI QUAN HỆ (ERD)
 
-M├┤ h├¼nh quan hß╗ç giß╗»a 10 bß║úng thß╗▒c thß╗â cß╗æt l├╡i trong hß╗ç thß╗æng:
+Mô hình quan hệ giữa 10 bảng thực thể cốt lõi trong hệ thống:
 
 ```mermaid
 erDiagram
-    LoaiPhong ||--o{ Phong : "chß╗⌐a"
-    Phong ||--o{ DatPhong : "thuß╗Öc"
-    KhachHang ||--o{ DatPhong : "thß╗▒c hiß╗çn"
-    NhanVien ||--o{ TaiKhoan : "sß╗ƒ hß╗»u"
-    NhanVien ||--o{ DatPhong : "tiß║┐p nhß║¡n"
-    DatPhong ||--o| HoaDon : "quyß║┐t to├ín"
-    Voucher ||--o{ HoaDon : "├íp dß╗Ñng"
-    PhuongThucThanhToan ||--o{ HoaDon : "thanh to├ín qua"
-    HoaDon ||--o{ ChiTietHoaDon : "bao gß╗ôm"
-    DichVu ||--o{ ChiTietHoaDon : "sß╗¡ dß╗Ñng"
+    LoaiPhong ||--o{ Phong : "chứa"
+    Phong ||--o{ DatPhong : "thuộc"
+    KhachHang ||--o{ DatPhong : "thực hiện"
+    NhanVien ||--o{ TaiKhoan : "sở hữu"
+    NhanVien ||--o{ DatPhong : "tiếp nhận"
+    DatPhong ||--o| HoaDon : "quyết toán"
+    Voucher ||--o{ HoaDon : "áp dụng"
+    PhuongThucThanhToan ||--o{ HoaDon : "thanh toán qua"
+    HoaDon ||--o{ ChiTietHoaDon : "bao gồm"
+    DichVu ||--o{ ChiTietHoaDon : "sử dụng"
 
     LoaiPhong {
         int MaLoai PK
@@ -120,180 +120,180 @@ erDiagram
 
 ---
 
-## 3. Tß╗¬ ─ÉIß╗éN Dß╗« LIß╗åU & R├ÇNG BUß╗ÿC TO├ÇN Vß║╕N (DATA DICTIONARY)
+## 3. TỪ ĐIỂN DỮ LIỆU & RÀNG BUỘC TOÀN VẸN (DATA DICTIONARY)
 
-### 3.1 Bß║úng `DatPhong` (─É╞ín ─æß║╖t ph├▓ng)
-| T├¬n cß╗Öt | Kiß╗âu dß╗» liß╗çu | R├áng buß╗Öc | ├¥ ngh─⌐a nghiß╗çp vß╗Ñ |
+### 3.1 Bảng `DatPhong` (Đơn đặt phòng)
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- |
-| `MaDatPhong` | `SERIAL` | `PRIMARY KEY` | Kh├│a ch├¡nh tß╗▒ t─âng |
-| `MaDat` | `VARCHAR(20)` | `NOT NULL, UNIQUE` | M├ú ─æ╞ín th├ón thiß╗çn (VD: `DP-20261023-001`) |
-| `MaKH` | `INT` | `FOREIGN KEY (KhachHang)` | Kh├ích h├áng ─æß║íi diß╗çn ─æß║╖t ph├▓ng |
-| `MaPhong` | `INT` | `FOREIGN KEY (Phong)` | Ph├▓ng ─æ╞░ß╗úc ph├ón bß╗ò |
-| `NgayNhan` | `DATE` | `NOT NULL` | Ng├áy nhß║¡n ph├▓ng dß╗▒ kiß║┐n |
-| `NgayTra` | `DATE` | `NOT NULL` | Ng├áy trß║ú ph├▓ng dß╗▒ kiß║┐n |
-| `SoDem` | `INT` | `GENERATED ALWAYS STORED` | Tß╗▒ ─æß╗Öng t├¡nh: `GREATEST(1, NgayTra - NgayNhan)` |
-| `GiaMotDem` | `NUMERIC(18,2)`| `NOT NULL` | Gi├í ph├▓ng tß║íi thß╗¥i ─æiß╗âm ─æß║╖t |
-| `TongTien` | `NUMERIC(18,2)`| `NOT NULL, >= 0` | Tß╗òng gi├í trß╗ï dß╗▒ kiß║┐n cß╗ºa ─æ╞ín |
-| `TienCoc` | `NUMERIC(18,2)`| `DEFAULT 0` | Sß╗æ tiß╗ün ─æß║╖t cß╗ìc tr╞░ß╗¢c (30%) |
-| `TrangThai` | `VARCHAR(20)` | `CHECK IN ('─É├ú ─æß║╖t','─Éang ß╗ƒ','─É├ú trß║ú','─É├ú hß╗ºy')` | V├▓ng ─æß╗¥i ─æ╞ín ph├▓ng |
-| `GioNhanThucTe`| `TIMESTAMP` | `NULL` | Ghi nhß║¡n l├║c l├ám thß╗º tß╗Ñc Check-in |
-| `GioTraThucTe` | `TIMESTAMP` | `NULL` | Ghi nhß║¡n l├║c l├ám thß╗º tß╗Ñc Check-out |
+| `MaDatPhong` | `SERIAL` | `PRIMARY KEY` | Khóa chính tự tăng |
+| `MaDat` | `VARCHAR(20)` | `NOT NULL, UNIQUE` | Mã đơn thân thiện (VD: `DP-20261023-001`) |
+| `MaKH` | `INT` | `FOREIGN KEY (KhachHang)` | Khách hàng đại diện đặt phòng |
+| `MaPhong` | `INT` | `FOREIGN KEY (Phong)` | Phòng được phân bổ |
+| `NgayNhan` | `DATE` | `NOT NULL` | Ngày nhận phòng dự kiến |
+| `NgayTra` | `DATE` | `NOT NULL` | Ngày trả phòng dự kiến |
+| `SoDem` | `INT` | `GENERATED ALWAYS STORED` | Tự động tính: `GREATEST(1, NgayTra - NgayNhan)` |
+| `GiaMotDem` | `NUMERIC(18,2)`| `NOT NULL` | Giá phòng tại thời điểm đặt |
+| `TongTien` | `NUMERIC(18,2)`| `NOT NULL, >= 0` | Tổng giá trị dự kiến của đơn |
+| `TienCoc` | `NUMERIC(18,2)`| `DEFAULT 0` | Số tiền đặt cọc trước (30%) |
+| `TrangThai` | `VARCHAR(20)` | `CHECK IN ('Đã đặt','Đang ở','Đã trả','Đã hủy')` | Vòng đời đơn phòng |
+| `GioNhanThucTe`| `TIMESTAMP` | `NULL` | Ghi nhận lúc làm thủ tục Check-in |
+| `GioTraThucTe` | `TIMESTAMP` | `NULL` | Ghi nhận lúc làm thủ tục Check-out |
 
-### 3.2 Bß║úng `HoaDon` (H├│a ─æ╞ín quyß║┐t to├ín)
-| T├¬n cß╗Öt | Kiß╗âu dß╗» liß╗çu | R├áng buß╗Öc | ├¥ ngh─⌐a nghiß╗çp vß╗Ñ |
+### 3.2 Bảng `HoaDon` (Hóa đơn quyết toán)
+| Tên cột | Kiểu dữ liệu | Ràng buộc | Ý nghĩa nghiệp vụ |
 | :--- | :--- | :--- | :--- |
-| `MaHoaDon` | `VARCHAR(20)` | `PRIMARY KEY` | M├ú h├│a ─æ╞ín chuß║⌐n (VD: `HD20261023001`) |
-| `MaDatPhong` | `VARCHAR(30)` | `NULL` | M├ú ─æß║╖t ph├▓ng t╞░╞íng ß╗⌐ng |
-| `TienPhong` | `NUMERIC(18,2)`| `NOT NULL` | Tiß╗ün ph├▓ng thß╗▒c tß║┐ (Sß╗æ ─æ├¬m x ─É╞ín gi├í) |
-| `TienDichVu` | `NUMERIC(18,2)`| `DEFAULT 0` | Tß╗òng tiß╗ün tß║Ñt cß║ú dß╗ïch vß╗Ñ ─æ├ú d├╣ng |
-| `TienDatCoc` | `NUMERIC(18,2)`| `DEFAULT 0` | Sß╗æ tiß╗ün ─æ├ú cß╗ìc ─æ╞░ß╗úc trß╗½ ra |
-| `TienGiamGia`| `NUMERIC(18,2)`| `DEFAULT 0` | Gi├í trß╗ï giß║úm trß╗½ tß╗½ m├ú Voucher |
+| `MaHoaDon` | `VARCHAR(20)` | `PRIMARY KEY` | Mã hóa đơn chuẩn (VD: `HD20261023001`) |
+| `MaDatPhong` | `VARCHAR(30)` | `NULL` | Mã đặt phòng tương ứng |
+| `TienPhong` | `NUMERIC(18,2)`| `NOT NULL` | Tiền phòng thực tế (Số đêm x Đơn giá) |
+| `TienDichVu` | `NUMERIC(18,2)`| `DEFAULT 0` | Tổng tiền tất cả dịch vụ đã dùng |
+| `TienDatCoc` | `NUMERIC(18,2)`| `DEFAULT 0` | Số tiền đã cọc được trừ ra |
+| `TienGiamGia`| `NUMERIC(18,2)`| `DEFAULT 0` | Giá trị giảm trừ từ mã Voucher |
 | `TongTien` | `NUMERIC(18,2)`| `NOT NULL` | `= TienPhong + TienDichVu - TienCoc - GiamGia` |
-| `MaPTTT` | `VARCHAR(10)` | `NOT NULL` | Ph╞░╞íng thß╗⌐c: VNPAY, MOMO, APPLEPAY, TM, POS |
+| `MaPTTT` | `VARCHAR(10)` | `NOT NULL` | Phương thức: VNPAY, MOMO, APPLEPAY, TM, POS |
 
 ---
 
-## 4. CHß╗¿NG MINH CHUß║¿N H├ôA Dß╗« LIß╗åU (1NF - 2NF - 3NF)
+## 4. CHỨNG MINH CHUẨN HÓA DỮ LIỆU (1NF - 2NF - 3NF)
 
-1. **Dß║íng chuß║⌐n 1 (1NF)**:
-   - Tß║Ñt cß║ú c├íc thuß╗Öc t├¡nh ─æß╗üu mang gi├í trß╗ï nguy├¬n tß╗æ (Atomic values), kh├┤ng c├│ cß╗Öt ─æa trß╗ï (Multi-valued attributes) hay nh├│m lß║╖p (Repeating groups). C├íc dß╗ïch vß╗Ñ kh├ích sß╗¡ dß╗Ñng ─æ╞░ß╗úc t├ích ri├¬ng th├ánh bß║úng `ChiTietHoaDon` chß╗⌐ kh├┤ng l╞░u dß║íng chuß╗ùi trong `HoaDon`.
-2. **Dß║íng chuß║⌐n 2 (2NF)**:
-   - ─Éß║ít 1NF v├á mß╗ìi thuß╗Öc t├¡nh kh├┤ng kh├│a ─æß╗üu phß╗Ñ thuß╗Öc h├ám ─æß║ºy ─æß╗º v├áo kh├│a ch├¡nh to├án bß╗Ö (kh├┤ng phß╗Ñ thuß╗Öc v├áo mß╗Öt phß║ºn cß╗ºa kh├│a gh├⌐p). Trong `ChiTietHoaDon`, kh├│a ch├¡nh l├á `MaCTHD` tß╗▒ t─âng, `SoLuong`, `DonGia`, `ThanhTien` phß╗Ñ thuß╗Öc to├án bß╗Ö v├áo `MaCTHD`.
-3. **Dß║íng chuß║⌐n 3 (3NF)**:
-   - ─Éß║ít 2NF v├á kh├┤ng c├│ phß╗Ñ thuß╗Öc bß║»c cß║ºu (Transitive Dependency). V├¡ dß╗Ñ: Th├┤ng tin `TenLoai`, `GiaMotDem` cß╗ºa loß║íi ph├▓ng kh├┤ng l╞░u trß╗▒c tiß║┐p trong bß║úng `Phong`, m├á ─æ╞░ß╗úc t├ích ra bß║úng `LoaiPhong`. Bß║úng `Phong` chß╗ë l╞░u kh├│a ngoß║íi `MaLoai`. Khi sß╗¡a gi├í loß║íi ph├▓ng, chß╗ë cß║ºn cß║¡p nhß║¡t tß║íi mß╗Öt n╞íi duy nhß║Ñt, tr├ính dß╗ï th╞░ß╗¥ng cß║¡p nhß║¡t (Update Anomaly).
+1. **Dạng chuẩn 1 (1NF)**:
+   - Tất cả các thuộc tính đều mang giá trị nguyên tố (Atomic values), không có cột đa trị (Multi-valued attributes) hay nhóm lặp (Repeating groups). Các dịch vụ khách sử dụng được tách riêng thành bảng `ChiTietHoaDon` chứ không lưu dạng chuỗi trong `HoaDon`.
+2. **Dạng chuẩn 2 (2NF)**:
+   - Đạt 1NF và mọi thuộc tính không khóa đều phụ thuộc hàm đầy đủ vào khóa chính toàn bộ (không phụ thuộc vào một phần của khóa ghép). Trong `ChiTietHoaDon`, khóa chính là `MaCTHD` tự tăng, `SoLuong`, `DonGia`, `ThanhTien` phụ thuộc toàn bộ vào `MaCTHD`.
+3. **Dạng chuẩn 3 (3NF)**:
+   - Đạt 2NF và không có phụ thuộc bắc cầu (Transitive Dependency). Ví dụ: Thông tin `TenLoai`, `GiaMotDem` của loại phòng không lưu trực tiếp trong bảng `Phong`, mà được tách ra bảng `LoaiPhong`. Bảng `Phong` chỉ lưu khóa ngoại `MaLoai`. Khi sửa giá loại phòng, chỉ cần cập nhật tại một nơi duy nhất, tránh dị thường cập nhật (Update Anomaly).
 
 ---
 
-## 5. Tß╗░ ─Éß╗ÿNG H├ôA Vß╗ÜI TRIGGERS (PL/pgSQL)
+## 5. TỰ ĐỘNG HÓA VỚI TRIGGERS (PL/pgSQL)
 
-Kß╗ïch bß║ún CSDL ─æ├ú c├ái ─æß║╖t **4 Triggers cao cß║Ñp** bß║úo ─æß║úm t├¡nh to├án vß║╣n:
+Kịch bản CSDL đã cài đặt **4 Triggers cao cấp** bảo đảm tính toàn vẹn:
 
-### 5.1 Trigger ─Éß╗ông bß╗Ö Trß║íng th├íi Ph├▓ng (`trg_DongBoTrangThaiPhong`)
-- **Sß╗▒ kiß╗çn:** `BEFORE UPDATE OF TrangThai ON DatPhong`
-- **Mß╗Ñc ─æ├¡ch:** Khi Lß╗à t├ón thao t├íc Check-in tr├¬n ß╗⌐ng dß╗Ñng (chuyß╗ân ─æ╞ín sang *'─Éang ß╗ƒ'*), Trigger tß╗▒ ─æß╗Öng ─æß╗òi `Phong.TinhTrang = '─Éang sß╗¡ dß╗Ñng'` v├á g├ín `GioNhanThucTe = CURRENT_TIMESTAMP`. Khi kh├ích Check-out (*'─É├ú trß║ú'*), Trigger ─æß╗òi ph├▓ng sang *'Chß╗¥ dß╗ìn dß║╣p'*.
-- **├¥ ngh─⌐a:** Loß║íi bß╗Å ho├án to├án lß╗ùi qu├¬n cß║¡p nhß║¡t buß╗ông ph├▓ng thß╗º c├┤ng, tr├ính viß╗çc hai kh├ích v├áo c├╣ng mß╗Öt ph├▓ng.
+### 5.1 Trigger Đồng bộ Trạng thái Phòng (`trg_DongBoTrangThaiPhong`)
+- **Sự kiện:** `BEFORE UPDATE OF TrangThai ON DatPhong`
+- **Mục đích:** Khi Lễ tân thao tác Check-in trên ứng dụng (chuyển đơn sang *'Đang ở'*), Trigger tự động đổi `Phong.TinhTrang = 'Đang sử dụng'` và gán `GioNhanThucTe = CURRENT_TIMESTAMP`. Khi khách Check-out (*'Đã trả'*), Trigger đổi phòng sang *'Chờ dọn dẹp'*.
+- **Ý nghĩa:** Loại bỏ hoàn toàn lỗi quên cập nhật buồng phòng thủ công, tránh việc hai khách vào cùng một phòng.
 
-### 5.2 Trigger Xß╗¡ l├╜ Voucher An to├án (`trg_XuLyVoucherHoaDon`)
-- **Sß╗▒ kiß╗çn:** `AFTER INSERT ON HoaDon`
-- **Mß╗Ñc ─æ├¡ch:** 
-  - Kh├│a d├▓ng Voucher vß╗¢i kß╗╣ thuß║¡t `FOR UPDATE` (Pessimistic Locking) ─æß╗â chß╗æng hiß╗çn t╞░ß╗úng tranh chß║Ñp (Race condition) khi nhiß╗üu h├│a ─æ╞ín c├╣ng ├íp dß╗Ñng 1 voucher cuß╗æi c├╣ng.
-  - Tß╗▒ ─æß╗Öng trß╗½ sß╗æ l╞░ß╗úng c├▓n lß║íi (`SoLuong = SoLuong - 1`). Nß║┐u sß╗æ l╞░ß╗úng vß╗ü 0, chuyß╗ân `TrangThai = FALSE`.
-  - Bß║»n ngoß║íi lß╗ç `RAISE EXCEPTION` nß║┐u voucher ─æ├ú hß║┐t hß║ín hoß║╖c hß║┐t l╞░ß╗út d├╣ng.
+### 5.2 Trigger Xử lý Voucher An toàn (`trg_XuLyVoucherHoaDon`)
+- **Sự kiện:** `AFTER INSERT ON HoaDon`
+- **Mục đích:** 
+  - Khóa dòng Voucher với kỹ thuật `FOR UPDATE` (Pessimistic Locking) để chống hiện tượng tranh chấp (Race condition) khi nhiều hóa đơn cùng áp dụng 1 voucher cuối cùng.
+  - Tự động trừ số lượng còn lại (`SoLuong = SoLuong - 1`). Nếu số lượng về 0, chuyển `TrangThai = FALSE`.
+  - Bắn ngoại lệ `RAISE EXCEPTION` nếu voucher đã hết hạn hoặc hết lượt dùng.
 
-### 5.3 Trigger Tß╗▒ t├¡nh Th├ánh tiß╗ün & Tß╗òng h├│a ─æ╞ín (`trg_CapNhatTienDichVuHoaDon`)
-- **Sß╗▒ kiß╗çn:** `AFTER INSERT OR UPDATE OR DELETE ON ChiTietHoaDon`
-- **Mß╗Ñc ─æ├¡ch:** Tß╗▒ ─æß╗Öng t├¡nh `ThanhTien = SoLuong * DonGia` v├á cß║¡p nhß║¡t tß╗⌐c th├¼ v├áo `HoaDon.TienDichVu` c├╣ng `HoaDon.TongTien`.
+### 5.3 Trigger Tự tính Thành tiền & Tổng hóa đơn (`trg_CapNhatTienDichVuHoaDon`)
+- **Sự kiện:** `AFTER INSERT OR UPDATE OR DELETE ON ChiTietHoaDon`
+- **Mục đích:** Tự động tính `ThanhTien = SoLuong * DonGia` và cập nhật tức thì vào `HoaDon.TienDichVu` cùng `HoaDon.TongTien`.
 
-### 5.4 Trigger Chß╗æng ─Éß║╖t Tr├╣ng Lß╗ïch (`trg_KiemTraTrungLichDatPhong`)
-- **Sß╗▒ kiß╗çn:** `BEFORE INSERT OR UPDATE ON DatPhong`
-- **Mß╗Ñc ─æ├¡ch:** Kiß╗âm tra giao thoa khoß║úng thß╗¥i gian (Interval Overlap condition):
+### 5.4 Trigger Chống Đặt Trùng Lịch (`trg_KiemTraTrungLichDatPhong`)
+- **Sự kiện:** `BEFORE INSERT OR UPDATE ON DatPhong`
+- **Mục đích:** Kiểm tra giao thoa khoảng thời gian (Interval Overlap condition):
   $$\text{NEW.NgayNhan} < \text{NgayTra} \quad \text{AND} \quad \text{NEW.NgayTra} > \text{NgayNhan}$$
-  Nß║┐u ph├ít hiß╗çn ph├▓ng ─æ├ú c├│ kh├ích ─æß║╖t hoß║╖c ─æang ß╗ƒ trong khoß║úng n├áy, hß╗ç thß╗æng tß╗½ chß╗æi ghi nhß║¡n v├á b├ío lß╗ùi chi tiß║┐t.
+  Nếu phát hiện phòng đã có khách đặt hoặc đang ở trong khoảng này, hệ thống từ chối ghi nhận và báo lỗi chi tiết.
 
 ---
 
-## 6. THß╗ª Tß╗ñC & H├ÇM NGHIß╗åP Vß╗ñ (STORED PROCEDURES & FUNCTIONS)
+## 6. THỦ TỤC & HÀM NGHIỆP VỤ (STORED PROCEDURES & FUNCTIONS)
 
-### 6.1 H├ám T├¼m ph├▓ng trß╗æng th├┤ng minh (`fn_TimPhongTrong`)
+### 6.1 Hàm Tìm phòng trống thông minh (`fn_TimPhongTrong`)
 ```sql
 SELECT * FROM fn_TimPhongTrong('2026-11-01', '2026-11-05', 2, 1);
 ```
-- Trß║ú vß╗ü danh s├ích ph├▓ng c├▓n trß╗æng thß╗▒c tß║┐, tß╗▒ loß║íi trß╗½ c├íc ph├▓ng ─æ├ú c├│ ng╞░ß╗¥i ─æß║╖t trong khoß║úng ng├áy ─æ├│, ─æß╗ông thß╗¥i thß╗Åa m├ún sß╗æ ng╞░ß╗¥i ß╗ƒ tß╗æi ─æa v├á loß║íi ph├▓ng mong muß╗æn.
+- Trả về danh sách phòng còn trống thực tế, tự loại trừ các phòng đã có người đặt trong khoảng ngày đó, đồng thời thỏa mãn số người ở tối đa và loại phòng mong muốn.
 
-### 6.2 Thß╗º tß╗Ñc Check-in nhß║¡n ph├▓ng (`sp_ThucHienCheckIn`)
+### 6.2 Thủ tục Check-in nhận phòng (`sp_ThucHienCheckIn`)
 ```sql
 CALL sp_ThucHienCheckIn(p_MaDatPhong := 105, p_MaNhanVien := 2);
 ```
-- ─É├│ng g├│i to├án bß╗Ö qu├í tr├¼nh nhß║¡n ph├▓ng v├áo mß╗Öt Transaction: Kiß╗âm tra ─æiß╗üu kiß╗çn ng├áy nhß║¡n, kiß╗âm tra ph├▓ng c├│ ─æang bß╗ï chiß║┐m dß╗Ñng, ─æß╗òi trß║íng th├íi v├á ghi log nhß║¡t k├╜ hß╗ç thß╗æng.
+- Đóng gói toàn bộ quá trình nhận phòng vào một Transaction: Kiểm tra điều kiện ngày nhận, kiểm tra phòng có đang bị chiếm dụng, đổi trạng thái và ghi log nhật ký hệ thống.
 
-### 6.3 Thß╗º tß╗Ñc Check-out & Quyß║┐t to├ín H├│a ─æ╞ín (`sp_ThucHienCheckOut`)
+### 6.3 Thủ tục Check-out & Quyết toán Hóa đơn (`sp_ThucHienCheckOut`)
 ```sql
 DO $$
 DECLARE v_MaHD VARCHAR(20);
 BEGIN
     CALL sp_ThucHienCheckOut(105, 'VNPAY', NULL, v_MaHD);
-    RAISE NOTICE '─É├ú xuß║Ñt h├│a ─æ╞ín: %', v_MaHD;
+    RAISE NOTICE 'Đã xuất hóa đơn: %', v_MaHD;
 END $$;
 ```
-- Tß╗▒ ─æß╗Öng cß╗Öng tiß╗ün ph├▓ng, tiß╗ün dß╗ïch vß╗Ñ, trß╗½ tiß╗ün cß╗ìc, ├íp m├ú giß║úm gi├í, sinh m├ú h├│a ─æ╞ín duy nhß║Ñt, kß║┐t th├║c l╞░u tr├║ v├á trß║ú ph├▓ng vß╗ü trß║íng th├íi chß╗¥ buß╗ông ph├▓ng dß╗ìn dß║╣p.
+- Tự động cộng tiền phòng, tiền dịch vụ, trừ tiền cọc, áp mã giảm giá, sinh mã hóa đơn duy nhất, kết thúc lưu trú và trả phòng về trạng thái chờ buồng phòng dọn dẹp.
 
 ---
 
-## 7. KHAI TH├üC Dß╗« LIß╗åU ─ÉA CHIß╗ÇU (ANALYTIC VIEWS)
+## 7. KHAI THÁC DỮ LIỆU ĐA CHIỀU (ANALYTIC VIEWS)
 
-Hß╗ç thß╗æng cung cß║Ñp **5 Views ph├ón t├¡ch dß╗» liß╗çu** phß╗Ñc vß╗Ñ c├┤ng t├íc quß║ún l├╜ v├á b├ío c├ío:
+Hệ thống cung cấp **5 Views phân tích dữ liệu** phục vụ công tác quản lý và báo cáo:
 
 1. **`vw_KhaiThacDoanhThuTheoThang`**:
-   - Thß╗æng k├¬ doanh thu tiß╗ün ph├▓ng, dß╗ïch vß╗Ñ, tiß╗ün ╞░u ─æ├úi voucher, thß╗▒c thu v├á sß╗æ l╞░ß╗úng giao dß╗ïch thanh to├ín kh├┤ng d├╣ng tiß╗ün mß║╖t (VNPAY/MoMo/Apple Pay) theo tß╗½ng th├íng.
+   - Thống kê doanh thu tiền phòng, dịch vụ, tiền ưu đãi voucher, thực thu và số lượng giao dịch thanh toán không dùng tiền mặt (VNPAY/MoMo/Apple Pay) theo từng tháng.
 2. **`vw_KhaiThacCongSuatLoaiPhong`**:
-   - Khai th├íc tß╗╖ lß╗ç lß║Ñp ─æß║ºy ph├▓ng (Occupancy Rate %) theo tß╗½ng hß║íng ph├▓ng ─æß╗â hß╗ù trß╗ú chiß║┐n l╞░ß╗úc ─æiß╗üu chß╗ënh gi├í ph├▓ng linh hoß║ít.
+   - Khai thác tỷ lệ lấp đầy phòng (Occupancy Rate %) theo từng hạng phòng để hỗ trợ chiến lược điều chỉnh giá phòng linh hoạt.
 3. **`vw_KhaiThacTopDichVu`**:
-   - ß╗¿ng dß╗Ñng h├ám cß╗¡a sß╗ò `DENSE_RANK() OVER (ORDER BY TongDoanhThu DESC)` xß║┐p hß║íng dß╗ïch vß╗Ñ mang lß║íi doanh thu cao nhß║Ñt cho kh├ích sß║ín.
+   - Ứng dụng hàm cửa sổ `DENSE_RANK() OVER (ORDER BY TongDoanhThu DESC)` xếp hạng dịch vụ mang lại doanh thu cao nhất cho khách sạn.
 4. **`vw_KhaiThacKhachHangVIP`**:
-   - ß╗¿ng dß╗Ñng m├┤ h├¼nh ph├ón kh├║c kh├ích h├áng RFM (Recency, Frequency, Monetary) ─æß╗â tß╗▒ ─æß╗Öng ph├ón hß║íng: *VIP Kim C╞░╞íng, VIP V├áng, Th├ón thiß║┐t, Kh├ích mß╗¢i*.
+   - Ứng dụng mô hình phân khúc khách hàng RFM (Recency, Frequency, Monetary) để tự động phân hạng: *VIP Kim Cương, VIP Vàng, Thân thiết, Khách mới*.
 5. **`vw_KhaiThacDashboardTongHop`**:
-   - Cung cß║Ñp mß╗Öt d├▓ng dß╗» liß╗çu tß╗òng quan cho Dashboard Lß╗à t├ón/Gi├ím ─æß╗æc: Sß╗æ ph├▓ng ─æang ß╗ƒ, sß╗æ ph├▓ng chß╗¥ dß╗ìn, sß╗æ l╞░ß╗út Check-in/Check-out h├┤m nay, doanh thu h├┤m nay v├á doanh thu th├íng n├áy.
+   - Cung cấp một dòng dữ liệu tổng quan cho Dashboard Lễ tân/Giám đốc: Số phòng đang ở, số phòng chờ dọn, số lượt Check-in/Check-out hôm nay, doanh thu hôm nay và doanh thu tháng này.
 
 ---
 
-## 8. Tß╗ÉI ╞»U H├ôA TRUY Vß║ñN Vß╗ÜI CHß╗ê Mß╗ñC (INDEXING & EXPLAIN ANALYZE)
+## 8. TỐI ƯU HÓA TRUY VẤN VỚI CHỈ MỤC (INDEXING & EXPLAIN ANALYZE)
 
-─Éß╗â ─æß║úm bß║úo CSDL ─æ├íp ß╗⌐ng tß╗æt khi sß╗æ l╞░ß╗úng bß║ún ghi l├¬n ─æß║┐n h├áng triß╗çu d├▓ng:
-- **─É├ính chß╗ë mß╗Ñc B-Tree ─æa cß╗Öt (Composite Indexes)**:
-  - `IX_DatPhong_NgayNhan_NgayTra` tr├¬n `(NgayNhan, NgayTra, TrangThai)`: T─âng tß╗æc ─æß╗Ö t├¼m ph├▓ng trß╗æng gß║Ñp 20 lß║ºn so vß╗¢i duyß╗çt tuß║ºn tß╗▒ (Sequential Scan).
-  - `IX_KhachHang_SDT_HoTen` tr├¬n `(SoDienThoai, HoTen)`: T├¼m kiß║┐m kh├ích h├áng tß╗⌐c th├¼ khi kh├ích ─æß╗ìc sß╗æ ─æiß╗çn thoß║íi tß║íi quß║ºy lß╗à t├ón.
-  - `IX_HoaDon_NgayThanhToan_TrangThai` tr├¬n `(NgayThanhToan, TrangThai, TongTien)`: Tß╗æi ╞░u h├│a c├íc truy vß║Ñn t├¡nh doanh thu v├á lß║¡p b├ío c├ío.
+Để đảm bảo CSDL đáp ứng tốt khi số lượng bản ghi lên đến hàng triệu dòng:
+- **Đánh chỉ mục B-Tree đa cột (Composite Indexes)**:
+  - `IX_DatPhong_NgayNhan_NgayTra` trên `(NgayNhan, NgayTra, TrangThai)`: Tăng tốc độ tìm phòng trống gấp 20 lần so với duyệt tuần tự (Sequential Scan).
+  - `IX_KhachHang_SDT_HoTen` trên `(SoDienThoai, HoTen)`: Tìm kiếm khách hàng tức thì khi khách đọc số điện thoại tại quầy lễ tân.
+  - `IX_HoaDon_NgayThanhToan_TrangThai` trên `(NgayThanhToan, TrangThai, TongTien)`: Tối ưu hóa các truy vấn tính doanh thu và lập báo cáo.
 
-**Minh chß╗⌐ng bß║▒ng c├óu lß╗çnh ph├ón t├¡ch kß║┐ hoß║ích thß╗▒c thi:**
+**Minh chứng bằng câu lệnh phân tích kế hoạch thực thi:**
 ```sql
 EXPLAIN ANALYZE 
 SELECT * FROM DatPhong 
-WHERE NgayNhan >= '2026-10-01' AND NgayTra <= '2026-10-31' AND TrangThai = '─É├ú ─æß║╖t';
+WHERE NgayNhan >= '2026-10-01' AND NgayTra <= '2026-10-31' AND TrangThai = 'Đã đặt';
 ```
-*Kß║┐t quß║ú:* Hß╗ç thß╗æng sß╗¡ dß╗Ñng `Bitmap Index Scan on IX_DatPhong_NgayNhan_NgayTra`, thß╗¥i gian thß╗▒c thi (Execution Time) giß║úm tß╗½ `~18.4ms` xuß╗æng chß╗ë c├▓n `~0.12ms`.
+*Kết quả:* Hệ thống sử dụng `Bitmap Index Scan on IX_DatPhong_NgayNhan_NgayTra`, thời gian thực thi (Execution Time) giảm từ `~18.4ms` xuống chỉ còn `~0.12ms`.
 
 ---
 
-## 9. Bß║óO Mß║¼T & PH├éN QUYß╗ÇN TRUY Cß║¼P (ROLE-BASED ACCESS CONTROL - RBAC)
+## 9. BẢO MẬT & PHÂN QUYỀN TRUY CẬP (ROLE-BASED ACCESS CONTROL - RBAC)
 
-Hß╗ç thß╗æng thiß║┐t lß║¡p m├┤ h├¼nh bß║úo mß║¡t 2 lß╗¢p:
-1. **Quß║ún Trß╗ï Vi├¬n (`role_quan_tri_ks`)**:
-   - To├án quyß╗ün (`ALL PRIVILEGES`) quß║ún l├╜ schema, sao l╞░u, phß╗Ñc hß╗ôi v├á thay ─æß╗òi cß║Ñu tr├║c bß║úng.
-2. **Nh├ón Vi├¬n Lß╗à T├ón (`role_le_tan_ks`)**:
-   - Chß╗ë ─æ╞░ß╗úc cß║Ñp quyß╗ün `SELECT, INSERT, UPDATE` tr├¬n c├íc bß║úng phß╗Ñc vß╗Ñ giao dß╗ïch (`DatPhong`, `KhachHang`, `HoaDon`, `ChiTietHoaDon`).
-   - Cß║Ñm ho├án to├án (`REVOKE`) quyß╗ün xem bß║úng `TaiKhoan` chß╗⌐a th├┤ng tin ─æ─âng nhß║¡p v├á mß║¡t khß║⌐u nhß║íy cß║úm cß╗ºa c├íc nh├ón sß╗▒ kh├íc.
-   - Chß╗ë ─æ╞░ß╗úc thß╗▒c thi (`EXECUTE`) c├íc Stored Procedure / Function hß╗úp lß╗ç ─æ╞░ß╗úc chß╗ë ─æß╗ïnh.
+Hệ thống thiết lập mô hình bảo mật 2 lớp:
+1. **Quản Trị Viên (`role_quan_tri_ks`)**:
+   - Toàn quyền (`ALL PRIVILEGES`) quản lý schema, sao lưu, phục hồi và thay đổi cấu trúc bảng.
+2. **Nhân Viên Lễ Tân (`role_le_tan_ks`)**:
+   - Chỉ được cấp quyền `SELECT, INSERT, UPDATE` trên các bảng phục vụ giao dịch (`DatPhong`, `KhachHang`, `HoaDon`, `ChiTietHoaDon`).
+   - Cấm hoàn toàn (`REVOKE`) quyền xem bảng `TaiKhoan` chứa thông tin đăng nhập và mật khẩu nhạy cảm của các nhân sự khác.
+   - Chỉ được thực thi (`EXECUTE`) các Stored Procedure / Function hợp lệ được chỉ định.
 
 ---
 
-## 10. H╞»ß╗ÜNG Dß║¬N THß╗░C THI & DEMO CHO Bß║óO Vß╗å ─Éß╗Æ ├üN
+## 10. HƯỚNG DẪN THỰC THI & DEMO CHO BẢO VỆ ĐỒ ÁN
 
-### B╞░ß╗¢c 1: Mß╗ƒ Supabase SQL Editor hoß║╖c pgAdmin
-1. ─É─âng nhß║¡p v├áo trang quß║ún trß╗ï Supabase / PostgreSQL.
-2. Mß╗ƒ tr├¼nh soß║ín thß║úo **SQL Editor**.
+### Bước 1: Mở Supabase SQL Editor hoặc pgAdmin
+1. Đăng nhập vào trang quản trị Supabase / PostgreSQL.
+2. Mở trình soạn thảo **SQL Editor**.
 
-### B╞░ß╗¢c 2: Chß║íy kß╗ïch bß║ún SQL Chuy├¬n ─æß╗ü 1
-1. Mß╗ƒ file [`Database/chuyen_de_1_khai_thac_csdl.sql`](file:///d:/ChuyenDe%201+2/Quß║ún%20L├╜%20Kh├ích%20Sß║ín/Database/chuyen_de_1_khai_thac_csdl.sql).
-2. Sao ch├⌐p v├á d├ín to├án bß╗Ö v├áo SQL Editor Γ₧ö Nhß║Ñn **RUN**.
-3. Th├┤ng b├ío ho├án tß║Ñt th├ánh c├┤ng sß║╜ hiß╗çn ra ß╗ƒ tab Messages.
+### Bước 2: Chạy kịch bản SQL Chuyên đề 1
+1. Mở file [`Database/chuyen_de_1_khai_thac_csdl.sql`](file:///d:/ChuyenDe%201+2/Quản%20Lý%20Khách%20Sạn/Database/chuyen_de_1_khai_thac_csdl.sql).
+2. Sao chép và dán toàn bộ vào SQL Editor ➔ Nhấn **RUN**.
+3. Thông báo hoàn tất thành công sẽ hiện ra ở tab Messages.
 
-### B╞░ß╗¢c 3: C├íc c├óu lß╗çnh truy vß║Ñn mß║½u ─æß╗â Demo tr╞░ß╗¢c Giß║úng vi├¬n
+### Bước 3: Các câu lệnh truy vấn mẫu để Demo trước Giảng viên
 ```sql
--- 1. Demo View B├ío c├ío Doanh thu theo th├íng
+-- 1. Demo View Báo cáo Doanh thu theo tháng
 SELECT * FROM vw_KhaiThacDoanhThuTheoThang;
 
--- 2. Demo View Tß╗╖ lß╗ç lß║Ñp ─æß║ºy buß╗ông ph├▓ng
+-- 2. Demo View Tỷ lệ lấp đầy buồng phòng
 SELECT * FROM vw_KhaiThacCongSuatLoaiPhong;
 
--- 3. Demo View Xß║┐p hß║íng Kh├ích h├áng VIP
+-- 3. Demo View Xếp hạng Khách hàng VIP
 SELECT * FROM vw_KhaiThacKhachHangVIP;
 
--- 4. Demo H├ám t├¼m kiß║┐m ph├▓ng trß╗æng theo ng├áy
+-- 4. Demo Hàm tìm kiếm phòng trống theo ngày
 SELECT * FROM fn_TimPhongTrong(CURRENT_DATE, CURRENT_DATE + 3, 2, NULL);
 
--- 5. Demo Trigger chß╗æng ─æß║╖t tr├╣ng ph├▓ng (Cß╗æ t├¼nh ─æß║╖t tr├╣ng ─æß╗â thß║Ñy lß╗ùi bß║»t giß╗»)
--- Sß║╜ nhß║¡n th├┤ng b├ío: Xung ─æß╗Öt lß╗ïch: Ph├▓ng ─æ├ú c├│ ─æ╞ín ─æß║╖t...
+-- 5. Demo Trigger chống đặt trùng phòng (Cố tình đặt trùng để thấy lỗi bắt giữ)
+-- Sẽ nhận thông báo: Xung đột lịch: Phòng đã có đơn đặt...
 ```
 
 ---
-*T├ái liß╗çu ─æ╞░ß╗úc x├óy dß╗▒ng ho├án chß╗ënh phß╗Ñc vß╗Ñ b├ío c├ío v├á bß║úo vß╗ç ─æß╗ô ├ín Chuy├¬n ─æß╗ü 1: Khai th├íc hß╗ç c╞í sß╗ƒ dß╗» liß╗çu - ─Éß║íi hß╗ìc V─ân Hiß║┐n.*
+*Tài liệu được xây dựng hoàn chỉnh phục vụ báo cáo và bảo vệ đồ án Chuyên đề 1: Khai thác hệ cơ sở dữ liệu - Đại học Văn Hiến.*
