@@ -2,7 +2,7 @@
 **MÃ HỌC PHẦN:** INT51309 (6 TÍN CHỈ)  
 **TRƯỜNG ĐẠI HỌC VĂN HIẾN - KHOA CÔNG NGHỆ THÔNG TIN**  
 **GIẢNG VIÊN HƯỚNG DẪN:** THẦY LƯƠNG THÁI HIỀN  
-**NHÓM THỰC HIỆN:** TUẤN MINH & NHÂN  
+**NHÓM THỰC HIỆN:** TUẤN MINH, NHÂN & THANH PHƯƠNG  
 **ĐỀ TÀI:** THIẾT KẾ, TỐI ƯU VÀ KHAI THÁC CƠ SỞ DỮ LIỆU HỆ THỐNG QUẢN LÝ KHÁCH SẠN AN NHIÊN  
 
 ---
