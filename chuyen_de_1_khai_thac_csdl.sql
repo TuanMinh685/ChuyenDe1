@@ -7,10 +7,10 @@
 -- ============================================================================
 
 -- ============================================================================
--- PHẦN 1: BỔ SUNG CẤU TRÚC PHỤ TRỢ (LOG & TIỆN NGHI NÂNG CAO)
+-- PHẦN 1: BỔ SUNG CẤU TRÚC PHỤ TRỢ & CHUẨN HÓA RÀNG BUỘC TOÀN VẸN (SCHEMA FIXES)
 -- ============================================================================
 
--- 1.1 Bảng lưu vết lịch sử biến động phòng và trạng thái đặt phòng
+-- 1.1 Bảng lưu vết lịch sử biến động nghiệp vụ (Audit Log hệ thống)
 CREATE TABLE IF NOT EXISTS NhatKyHeThong (
     MaNhatKy        SERIAL PRIMARY KEY,
     LoaiHanhDong    VARCHAR(50)   NOT NULL, -- 'CHECK_IN', 'CHECK_OUT', 'DAT_PHONG', 'HUY_PHONG', 'AP_VOUCHER'
@@ -23,7 +23,29 @@ CREATE TABLE IF NOT EXISTS NhatKyHeThong (
     MoTaChiTiet     TEXT          NULL
 );
 
--- 1.2 Bổ sung cột GioTraThucTe / GioNhanThucTe nếu bảng cũ chưa có
+-- 1.2 Bảng nhật ký bảo mật phục vụ BaoMatHelper.GhiNhatKy trong ứng dụng C#
+CREATE TABLE IF NOT EXISTS NhatKyBaoMat (
+    MaNhatKy        SERIAL PRIMARY KEY,
+    TaiKhoan        VARCHAR(50)   NOT NULL,
+    HanhDong        VARCHAR(100)  NOT NULL,
+    ChiTiet         TEXT          NULL,
+    MayTram         VARCHAR(100)  NULL,
+    ThoiGian        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 1.3 Bảng quản lý sổ phiếu đặt cọc và hoàn cọc
+CREATE TABLE IF NOT EXISTS PhieuDatCoc (
+    MaPhieu         SERIAL PRIMARY KEY,
+    MaDatPhong      INT           NOT NULL REFERENCES DatPhong(MaDatPhong) ON DELETE CASCADE,
+    LoaiGiaoDich    VARCHAR(10)   NOT NULL CHECK (LoaiGiaoDich IN ('Thu', 'Hoan')),
+    SoTien          NUMERIC(18,2) NOT NULL CHECK (SoTien >= 0),
+    PhuongThuc      VARCHAR(10)   NOT NULL DEFAULT 'TM',
+    MaNhanVien      INT           NULL REFERENCES NhanVien(MaNhanVien),
+    NgayGiaoDich    TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    GhiChu          VARCHAR(200)  NULL
+);
+
+-- 1.4 Bổ sung cột GioTraThucTe / GioNhanThucTe nếu bảng cũ chưa có
 DO $$
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'datphong' AND column_name = 'gionhanthucte') THEN
@@ -34,16 +56,165 @@ BEGIN
     END IF;
 END $$;
 
+-- 1.5 Chuẩn hóa từ điển trạng thái phòng (Phong.TinhTrang chỉ nhận 'Hoạt động' hoặc 'Bảo trì')
+UPDATE Phong
+SET TinhTrang = 'Hoạt động'
+WHERE TinhTrang NOT IN ('Hoạt động', 'Bảo trì');
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'ck_phong_tinhtrang') THEN
+        ALTER TABLE Phong ADD CONSTRAINT ck_phong_tinhtrang CHECK (TinhTrang IN ('Hoạt động', 'Bảo trì'));
+    END IF;
+END $$;
+
+-- 1.6 Chuẩn hóa bảng PhuongThucThanhToan (thêm cột mã viết tắt MaPTTT) và tạo FK từ HoaDon
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'phuongthucthanhtoan' AND column_name = 'mapttt') THEN
+        ALTER TABLE PhuongThucThanhToan ADD COLUMN MaPTTT VARCHAR(10);
+    END IF;
+END $$;
+
+UPDATE PhuongThucThanhToan SET MaPTTT = 'TM'       WHERE TenPhuongThuc ILIKE '%Tiền mặt%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'VNPAY'    WHERE TenPhuongThuc ILIKE '%VNPAY%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'MOMO'     WHERE TenPhuongThuc ILIKE '%MoMo%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'APPLEPAY' WHERE TenPhuongThuc ILIKE '%Apple%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'CK'       WHERE TenPhuongThuc ILIKE '%Chuyển khoản%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'POS'      WHERE TenPhuongThuc ILIKE '%Thẻ%' AND MaPTTT IS NULL;
+UPDATE PhuongThucThanhToan SET MaPTTT = 'PT' || MaPhuongThuc::TEXT WHERE MaPTTT IS NULL;
+
+-- Khử trùng MaPTTT nếu có nhiều dòng cùng loại trên CSDL hiện hành
+WITH dup_pt AS (
+    SELECT MaPhuongThuc, MaPTTT,
+           ROW_NUMBER() OVER (PARTITION BY MaPTTT ORDER BY MaPhuongThuc) AS rn
+    FROM PhuongThucThanhToan
+)
+UPDATE PhuongThucThanhToan pt
+SET MaPTTT = 'PT' || pt.MaPhuongThuc::TEXT
+FROM dup_pt d
+WHERE pt.MaPhuongThuc = d.MaPhuongThuc AND d.rn > 1;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_phuongthucthanhtoan_mapttt') THEN
+        ALTER TABLE PhuongThucThanhToan ADD CONSTRAINT uq_phuongthucthanhtoan_mapttt UNIQUE (MaPTTT);
+    END IF;
+END $$;
+
+INSERT INTO PhuongThucThanhToan (MaPTTT, TenPhuongThuc, MoTa, KichHoat)
+SELECT v.MaPTTT, v.TenPhuongThuc, v.MoTa, TRUE
+FROM (VALUES
+    ('TM',       'Tiền mặt',              'Thanh toán tiền mặt tại quầy lễ tân'),
+    ('CK',       'Chuyển khoản',          'Chuyển khoản ngân hàng nội địa'),
+    ('POS',      'Thẻ',                   'Quẹt thẻ ngân hàng qua máy POS'),
+    ('VNPAY',    'VNPAY-QR',              'Quét mã QR cổng VNPAY chuẩn EMVCo'),
+    ('MOMO',     'Ví MoMo',               'Thanh toán qua ví điện tử MoMo QR'),
+    ('APPLEPAY', 'Apple Pay Contactless', 'Thanh toán chạm NFC Apple Pay')
+) AS v(MaPTTT, TenPhuongThuc, MoTa)
+WHERE NOT EXISTS (
+    SELECT 1 FROM PhuongThucThanhToan pt
+    WHERE pt.MaPTTT = v.MaPTTT OR pt.TenPhuongThuc = v.TenPhuongThuc
+);
+
+-- 1.7 Đồng bộ dữ liệu HoaDon.MaDatPhong sang mã chuẩn DatPhong.MaDat và tạo FOREIGN KEY vật lý
+UPDATE HoaDon hd
+SET MaDatPhong = dp.MaDat
+FROM DatPhong dp
+WHERE hd.MaDatPhong = dp.MaDatPhong::TEXT
+  AND hd.MaDatPhong <> dp.MaDat;
+
+UPDATE HoaDon hd
+SET MaDatPhong = NULL
+WHERE hd.MaDatPhong IS NOT NULL
+  AND NOT EXISTS (SELECT 1 FROM DatPhong dp WHERE dp.MaDat = hd.MaDatPhong);
+
+UPDATE HoaDon
+SET MaPTTT = 'TM'
+WHERE MaPTTT IS NULL
+   OR NOT EXISTS (SELECT 1 FROM PhuongThucThanhToan pt WHERE pt.MaPTTT = HoaDon.MaPTTT);
+
+-- Đồng bộ ThanhTien và TienDichVu giữa ChiTietHoaDon và HoaDon cho dữ liệu lịch sử
+UPDATE ChiTietHoaDon
+SET ThanhTien = COALESCE(SoLuong, 1) * COALESCE(DonGia, 0)
+WHERE ThanhTien IS NULL OR ThanhTien <> COALESCE(SoLuong, 1) * COALESCE(DonGia, 0);
+
+UPDATE HoaDon hd
+SET TienDichVu = COALESCE((SELECT SUM(ct.ThanhTien) FROM ChiTietHoaDon ct WHERE ct.MaHoaDon = hd.MaHoaDon), 0),
+    TongTien = GREATEST(0, TienPhong + COALESCE((SELECT SUM(ct.ThanhTien) FROM ChiTietHoaDon ct WHERE ct.MaHoaDon = hd.MaHoaDon), 0) - TienGiamGia - TienDatCoc);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hoadon_datphong') THEN
+        ALTER TABLE HoaDon
+        ADD CONSTRAINT fk_hoadon_datphong
+        FOREIGN KEY (MaDatPhong) REFERENCES DatPhong(MaDat)
+        ON UPDATE CASCADE ON DELETE SET NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_hoadon_phuongthucthanhtoan') THEN
+        ALTER TABLE HoaDon
+        ADD CONSTRAINT fk_hoadon_phuongthucthanhtoan
+        FOREIGN KEY (MaPTTT) REFERENCES PhuongThucThanhToan(MaPTTT)
+        ON UPDATE CASCADE;
+    END IF;
+END $$;
+
+-- 1.8 Làm sạch dữ liệu trùng và thiết lập ràng buộc UNIQUE trên Voucher.Code, TaiKhoan.MaNhanVien, KhachHang.SoDienThoai
+WITH dup_kh AS (
+    SELECT MaKH, SoDienThoai,
+           ROW_NUMBER() OVER (PARTITION BY SoDienThoai ORDER BY MaKH) AS rn
+    FROM KhachHang
+)
+UPDATE KhachHang kh
+SET SoDienThoai = LEFT(kh.SoDienThoai, 14) || '_' || kh.MaKH::TEXT
+FROM dup_kh d
+WHERE kh.MaKH = d.MaKH AND d.rn > 1;
+
+WITH dup_vc AS (
+    SELECT MaVoucher, Code,
+           ROW_NUMBER() OVER (PARTITION BY Code ORDER BY MaVoucher) AS rn
+    FROM Voucher
+)
+UPDATE Voucher vc
+SET Code = LEFT(vc.Code, 22) || '_' || vc.MaVoucher::TEXT
+FROM dup_vc d
+WHERE vc.MaVoucher = d.MaVoucher AND d.rn > 1;
+
+WITH dup_tk AS (
+    SELECT MaTaiKhoan, MaNhanVien,
+           ROW_NUMBER() OVER (PARTITION BY MaNhanVien ORDER BY MaTaiKhoan) AS rn
+    FROM TaiKhoan
+)
+DELETE FROM TaiKhoan tk
+USING dup_tk d
+WHERE tk.MaTaiKhoan = d.MaTaiKhoan AND d.rn > 1;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_voucher_code') THEN
+        ALTER TABLE Voucher ADD CONSTRAINT uq_voucher_code UNIQUE (Code);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_taikhoan_manhanvien') THEN
+        ALTER TABLE TaiKhoan ADD CONSTRAINT uq_taikhoan_manhanvien UNIQUE (MaNhanVien);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'uq_khachhang_sodienthoai') THEN
+        ALTER TABLE KhachHang ADD CONSTRAINT uq_khachhang_sodienthoai UNIQUE (SoDienThoai);
+    END IF;
+END $$;
+
+
 -- ============================================================================
 -- PHẦN 2: LẬP TRÌNH TRIGGER TỰ ĐỘNG HÓA & TOÀN VẸN DỮ LIỆU (TRIGGERS)
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- TRIGGER 1: Tự động đồng bộ trạng thái phòng khi nhận phòng / trả phòng / hủy
--- Nghiệp vụ: 
---  - Khi đơn chuyển sang 'Đang ở' -> Phòng đổi thành 'Đang sử dụng'
---  - Khi đơn chuyển sang 'Đã trả' -> Phòng đổi thành 'Chờ dọn dẹp'
---  - Khi đơn chuyển sang 'Đã hủy' -> Nếu phòng chưa có ai ở thì trả về 'Hoạt động'
+-- TRIGGER 1: Tự động ghi nhận mốc thời gian lưu trú & nhật ký khi đổi trạng thái đơn
+-- Nghiệp vụ:
+--  - Giữ Phong.TinhTrang = 'Hoạt động' (tránh xung đột từ điển với ứng dụng C#).
+--  - Tự động ghi nhận GioNhanThucTe, GioTraThucTe, NgayHuy và lưu vết NhatKyHeThong.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_trg_DongBoTrangThaiPhong()
 RETURNS TRIGGER AS $$
@@ -51,12 +222,11 @@ BEGIN
     -- 1. Khách nhận phòng (Check-in)
     IF (NEW.TrangThai = 'Đang ở' AND (OLD.TrangThai IS NULL OR OLD.TrangThai <> 'Đang ở')) THEN
         UPDATE Phong 
-        SET TinhTrang = 'Đang sử dụng'
-        WHERE MaPhong = NEW.MaPhong;
+        SET TinhTrang = 'Hoạt động'
+        WHERE MaPhong = NEW.MaPhong AND TinhTrang <> 'Bảo trì';
 
         NEW.GioNhanThucTe := COALESCE(NEW.GioNhanThucTe, CURRENT_TIMESTAMP);
 
-        -- Ghi nhật ký
         INSERT INTO NhatKyHeThong (LoaiHanhDong, BangTacDong, KhoaChinh, GiaTriCu, GiaTriMoi, MoTaChiTiet)
         VALUES ('CHECK_IN', 'DatPhong', NEW.MaDatPhong::TEXT, OLD.TrangThai, NEW.TrangThai, 
                 'Khách đã nhận phòng thành công tại phòng mã ' || NEW.MaPhong);
@@ -65,25 +235,21 @@ BEGIN
     -- 2. Khách trả phòng (Check-out)
     IF (NEW.TrangThai = 'Đã trả' AND (OLD.TrangThai IS NULL OR OLD.TrangThai <> 'Đã trả')) THEN
         UPDATE Phong 
-        SET TinhTrang = 'Chờ dọn dẹp'
-        WHERE MaPhong = NEW.MaPhong;
+        SET TinhTrang = 'Hoạt động'
+        WHERE MaPhong = NEW.MaPhong AND TinhTrang <> 'Bảo trì';
 
         NEW.GioTraThucTe := COALESCE(NEW.GioTraThucTe, CURRENT_TIMESTAMP);
 
-        -- Ghi nhật ký
         INSERT INTO NhatKyHeThong (LoaiHanhDong, BangTacDong, KhoaChinh, GiaTriCu, GiaTriMoi, MoTaChiTiet)
         VALUES ('CHECK_OUT', 'DatPhong', NEW.MaDatPhong::TEXT, OLD.TrangThai, NEW.TrangThai, 
-                'Khách đã hoàn tất trả phòng, phòng chuyển trạng thái chờ dọn dẹp.');
+                'Khách đã hoàn tất trả phòng, phòng sẵn sàng đón khách tiếp theo.');
     END IF;
 
     -- 3. Hủy đơn đặt phòng
     IF (NEW.TrangThai = 'Đã hủy' AND (OLD.TrangThai IS NULL OR OLD.TrangThai <> 'Đã hủy')) THEN
-        -- Chỉ trả về 'Hoạt động' nếu không có khách khác đang ở phòng này
-        IF NOT EXISTS (SELECT 1 FROM DatPhong WHERE MaPhong = NEW.MaPhong AND TrangThai = 'Đang ở' AND MaDatPhong <> NEW.MaDatPhong) THEN
-            UPDATE Phong 
-            SET TinhTrang = 'Hoạt động'
-            WHERE MaPhong = NEW.MaPhong;
-        END IF;
+        UPDATE Phong 
+        SET TinhTrang = 'Hoạt động'
+        WHERE MaPhong = NEW.MaPhong AND TinhTrang <> 'Bảo trì';
 
         NEW.NgayHuy := COALESCE(NEW.NgayHuy, CURRENT_TIMESTAMP);
 
@@ -104,24 +270,35 @@ EXECUTE FUNCTION fn_trg_DongBoTrangThaiPhong();
 
 
 -- ----------------------------------------------------------------------------
--- TRIGGER 2: Tự động trừ số lượng Voucher và khóa khi hết lượt
--- Nghiệp vụ: Đảm bảo kiểm tra hạn dùng, số lượng khả dụng và tự trừ trong CSDL
+-- TRIGGER 2: Tự động kiểm tra điều kiện, trừ số lượng Voucher (chống trừ kép 2 lần)
+-- Nghiệp vụ:
+--  - Chỉ thực thi khi Hóa đơn ở trạng thái 'Đã thanh toán' và có MaVoucher.
+--  - Kiểm tra khóa chống trừ kép qua NhatKyHeThong để đảm bảo mỗi hóa đơn chỉ trừ đúng 1 lượt.
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_trg_XuLyVoucherHoaDon()
 RETURNS TRIGGER AS $$
 DECLARE
     v_SoLuong INT;
+    v_NgayBatDau DATE;
     v_HetHan DATE;
+    v_DonToiThieu NUMERIC(18,2);
     v_TrangThai BOOLEAN;
 BEGIN
-    IF NEW.MaVoucher IS NOT NULL THEN
-        SELECT SoLuong, NgayHetHan, TrangThai 
-        INTO v_SoLuong, v_HetHan, v_TrangThai
+    IF NEW.MaVoucher IS NOT NULL AND NEW.TrangThai = 'Đã thanh toán' THEN
+        -- Nếu hóa đơn này đã từng được trừ Voucher rồi thì bỏ qua (tránh trừ kép 2 lần)
+        IF EXISTS (
+            SELECT 1 FROM NhatKyHeThong
+            WHERE LoaiHanhDong = 'AP_VOUCHER' AND KhoaChinh = NEW.MaHoaDon
+        ) THEN
+            RETURN NEW;
+        END IF;
+
+        SELECT SoLuong, NgayBatDau, NgayHetHan, COALESCE(DonToiThieu, 0), TrangThai 
+        INTO v_SoLuong, v_NgayBatDau, v_HetHan, v_DonToiThieu, v_TrangThai
         FROM Voucher 
         WHERE MaVoucher = NEW.MaVoucher
-        FOR UPDATE; -- Khóa bi quan (pessimistic lock) chống race condition
+        FOR UPDATE;
 
-        -- Kiểm tra hợp lệ
         IF NOT FOUND THEN
             RAISE EXCEPTION 'Mã voucher không tồn tại trong hệ thống!';
         END IF;
@@ -130,15 +307,19 @@ BEGIN
             RAISE EXCEPTION 'Mã voucher này hiện đang bị tạm khóa hoặc đã hết hiệu lực!';
         END IF;
 
-        IF v_HetHan < CURRENT_DATE THEN
-            RAISE EXCEPTION 'Mã voucher đã hết hạn sử dụng vào ngày %!', v_HetHan;
+        IF CURRENT_DATE < v_NgayBatDau OR CURRENT_DATE > v_HetHan THEN
+            RAISE EXCEPTION 'Mã voucher nằm ngoài thời hạn sử dụng (% đến %)!', v_NgayBatDau, v_HetHan;
         END IF;
 
         IF v_SoLuong IS NOT NULL AND v_SoLuong <= 0 THEN
             RAISE EXCEPTION 'Mã voucher này đã hết lượt sử dụng!';
         END IF;
 
-        -- Trừ số lượng
+        IF (COALESCE(NEW.TienPhong, 0) + COALESCE(NEW.TienDichVu, 0)) < v_DonToiThieu THEN
+            RAISE EXCEPTION 'Tổng tiền hóa đơn chưa đạt mức tối thiểu (%) để áp dụng voucher!', v_DonToiThieu;
+        END IF;
+
+        -- Trừ đúng 1 lượt sử dụng
         IF v_SoLuong IS NOT NULL THEN
             UPDATE Voucher
             SET SoLuong = SoLuong - 1,
@@ -156,15 +337,36 @@ $$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trg_XuLyVoucherHoaDon ON HoaDon;
 CREATE TRIGGER trg_XuLyVoucherHoaDon
-AFTER INSERT ON HoaDon
+AFTER INSERT OR UPDATE OF TrangThai, MaVoucher ON HoaDon
 FOR EACH ROW
 EXECUTE FUNCTION fn_trg_XuLyVoucherHoaDon();
 
 
 -- ----------------------------------------------------------------------------
--- TRIGGER 3: Tự động tính Thành tiền chi tiết hóa đơn & cập nhật tổng tiền
--- Nghiệp vụ: Đảm bảo tính nhất quán (Consistency), không bị sai lệch số liệu
+-- TRIGGER 3A (BEFORE) & 3B (AFTER): Tự động tính Thành tiền ChiTietHoaDon & cập nhật HoaDon
+-- Nghiệp vụ:
+--  - BEFORE INSERT OR UPDATE: Tự điền NEW.DonGia từ DichVu (nếu thiếu) và tính NEW.ThanhTien.
+--  - AFTER INSERT OR UPDATE OR DELETE: Tính lại tổng TienDichVu và TongTien trên HoaDon,
+--    trả về RETURN OLD khi DELETE và RETURN NEW khi INSERT/UPDATE đúng chuẩn PostgreSQL.
 -- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_trg_BeforeChiTietHoaDon()
+RETURNS TRIGGER AS $$
+BEGIN
+    IF NEW.DonGia IS NULL OR NEW.DonGia <= 0 THEN
+        SELECT DonGia INTO NEW.DonGia FROM DichVu WHERE MaDichVu = NEW.MaDichVu;
+    END IF;
+    NEW.SoLuong := COALESCE(NULLIF(NEW.SoLuong, 0), 1);
+    NEW.ThanhTien := NEW.SoLuong * COALESCE(NEW.DonGia, 0);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trg_BeforeChiTietHoaDon ON ChiTietHoaDon;
+CREATE TRIGGER trg_BeforeChiTietHoaDon
+BEFORE INSERT OR UPDATE ON ChiTietHoaDon
+FOR EACH ROW
+EXECUTE FUNCTION fn_trg_BeforeChiTietHoaDon();
+
 CREATE OR REPLACE FUNCTION fn_trg_CapNhatTienDichVuHoaDon()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -172,14 +374,6 @@ DECLARE
     v_TongTienDV NUMERIC(18,2);
 BEGIN
     v_MaHD := COALESCE(NEW.MaHoaDon, OLD.MaHoaDon);
-
-    -- Tự động điền đơn giá và thành tiền nếu INSERT chưa có
-    IF (TG_OP = 'INSERT' OR TG_OP = 'UPDATE') THEN
-        IF NEW.DonGia IS NULL OR NEW.DonGia <= 0 THEN
-            SELECT DonGia INTO NEW.DonGia FROM DichVu WHERE MaDichVu = NEW.MaDichVu;
-        END IF;
-        NEW.ThanhTien := COALESCE(NEW.SoLuong, 1) * COALESCE(NEW.DonGia, 0);
-    END IF;
 
     -- Tính lại tổng tiền dịch vụ của hóa đơn
     SELECT COALESCE(SUM(ThanhTien), 0) INTO v_TongTienDV
@@ -192,7 +386,11 @@ BEGIN
         TongTien = GREATEST(0, (TienPhong + v_TongTienDV - TienGiamGia - TienDatCoc))
     WHERE MaHoaDon = v_MaHD;
 
-    RETURN NEW;
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
 END;
 $$ LANGUAGE plpgsql;
 
@@ -209,8 +407,7 @@ EXECUTE FUNCTION fn_trg_CapNhatTienDichVuHoaDon();
 CREATE OR REPLACE FUNCTION fn_trg_KiemTraTrungLichDatPhong()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Kiểm tra xem có phòng nào trùng khoảng thời gian (Overlap) ở trạng thái 'Đã đặt' hoặc 'Đang ở'
-    IF EXISTS (
+    IF NEW.TrangThai IN ('Đã đặt', 'Đang ở') AND EXISTS (
         SELECT 1 FROM DatPhong
         WHERE MaPhong = NEW.MaPhong
           AND TrangThai IN ('Đã đặt', 'Đang ở')
@@ -238,7 +435,6 @@ EXECUTE FUNCTION fn_trg_KiemTraTrungLichDatPhong();
 
 -- ----------------------------------------------------------------------------
 -- FUNCTION 1: Tìm kiếm phòng khả dụng theo khoảng ngày & tiêu chí lọc
--- Trả về Table chứa danh sách phòng trống kèm giá và tiện nghi
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_TimPhongTrong(
     p_NgayNhan DATE,
@@ -259,7 +455,6 @@ RETURNS TABLE (
     TinhTrang     VARCHAR(30)
 ) AS $$
 BEGIN
-    -- Kiểm tra logic ngày hợp lệ
     IF p_NgayNhan >= p_NgayTra THEN
         RAISE EXCEPTION 'Ngày nhận phòng (%) phải trước ngày trả phòng (%)!', p_NgayNhan, p_NgayTra;
     END IF;
@@ -278,7 +473,7 @@ BEGIN
         p.TinhTrang
     FROM Phong p
     JOIN LoaiPhong lp ON p.MaLoai = lp.MaLoai
-    WHERE p.TinhTrang IN ('Hoạt động', 'Trống', 'Đã dọn dẹp')
+    WHERE p.TinhTrang = 'Hoạt động'
       AND (p_MaLoai IS NULL OR p.MaLoai = p_MaLoai)
       AND (lp.SoNguoiToiDa >= p_SoNguoi)
       AND NOT EXISTS (
@@ -294,7 +489,7 @@ $$ LANGUAGE plpgsql;
 
 
 -- ----------------------------------------------------------------------------
--- FUNCTION 2: Tính toán chi tiết chi phí đặt phòng (Ước tính giá & Tiền cọc)
+-- FUNCTION 2: Tính toán chi tiết chi phí đặt phòng (Ước tính giá & Tiền cọc 30%)
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_TinhToanChiPhiDatPhong(
     p_GiaMotDem   NUMERIC(18,2),
@@ -322,17 +517,14 @@ BEGIN
     v_SoDem := GREATEST(1, (p_NgayTra - p_NgayNhan));
     v_TienGoc := p_GiaMotDem * v_SoDem;
 
-    -- Phụ thu nếu trên 2 người lớn (150.000 đ/người/đêm)
     IF p_SoNguoiLon > 2 THEN
         v_PhuThu := v_PhuThu + ((p_SoNguoiLon - 2) * 150000 * v_SoDem);
     END IF;
 
-    -- Phụ thu trẻ em (80.000 đ/bé/đêm)
     IF p_SoTreEm > 0 THEN
         v_PhuThu := v_PhuThu + (p_SoTreEm * 80000 * v_SoDem);
     END IF;
 
-    -- Thuế và phí
     v_Thue := (v_TienGoc + v_PhuThu) * p_PhanTramVAT;
     v_Tong := v_TienGoc + v_PhuThu + v_Thue;
 
@@ -343,7 +535,7 @@ BEGIN
         v_PhuThu,
         v_Thue,
         v_Tong,
-        ROUND(v_Tong * 0.30, -3); -- Tiền cọc 30% làm tròn nghìn
+        ROUND(v_Tong * 0.30, -3);
 END;
 $$ LANGUAGE plpgsql;
 
@@ -362,10 +554,10 @@ DECLARE
     v_NgayNhan DATE;
     v_MaPhong INT;
     v_SoPhong VARCHAR(20);
+    v_TinhTrangPhong VARCHAR(30);
 BEGIN
-    -- Kiểm tra sự tồn tại và khóa dòng dữ liệu
-    SELECT dp.TrangThai, dp.NgayNhan, dp.MaPhong, p.SoPhong
-    INTO v_TrangThai, v_NgayNhan, v_MaPhong, v_SoPhong
+    SELECT dp.TrangThai, dp.NgayNhan, dp.MaPhong, p.SoPhong, p.TinhTrang
+    INTO v_TrangThai, v_NgayNhan, v_MaPhong, v_SoPhong, v_TinhTrangPhong
     FROM DatPhong dp
     JOIN Phong p ON dp.MaPhong = p.MaPhong
     WHERE dp.MaDatPhong = p_MaDatPhong
@@ -379,26 +571,27 @@ BEGIN
         RAISE EXCEPTION 'Đơn phòng đang ở trạng thái "%", không thể thực hiện nhận phòng!', v_TrangThai;
     END IF;
 
+    IF v_TinhTrangPhong = 'Bảo trì' THEN
+        RAISE EXCEPTION 'Phòng % hiện đang Bảo trì, không thể nhận phòng!', v_SoPhong;
+    END IF;
+
     IF v_NgayNhan > CURRENT_DATE THEN
         RAISE EXCEPTION 'Chưa đến ngày nhận phòng (Ngày nhận: %). Chỉ nhận phòng từ ngày nhận trở đi!', v_NgayNhan;
     END IF;
 
-    -- Kiểm tra phòng có đang bị khách khác ở không
     IF EXISTS (SELECT 1 FROM DatPhong WHERE MaPhong = v_MaPhong AND TrangThai = 'Đang ở' AND MaDatPhong <> p_MaDatPhong) THEN
         RAISE EXCEPTION 'Phòng % hiện đang có khách lưu trú chưa trả phòng!', v_SoPhong;
     END IF;
 
-    -- Cập nhật trạng thái nhận phòng
     UPDATE DatPhong
     SET TrangThai = 'Đang ở',
-        GioNhanThucTe = CURRENT_TIMESTAMP,
+        GioNhanThucTe = COALESCE(GioNhanThucTe, CURRENT_TIMESTAMP),
         MaNhanVien = COALESCE(p_MaNhanVien, MaNhanVien)
     WHERE MaDatPhong = p_MaDatPhong;
 
-    -- Đồng bộ trạng thái buồng phòng
     UPDATE Phong
-    SET TinhTrang = 'Đang sử dụng'
-    WHERE MaPhong = v_MaPhong;
+    SET TinhTrang = 'Hoạt động'
+    WHERE MaPhong = v_MaPhong AND TinhTrang <> 'Bảo trì';
 
     RAISE NOTICE 'Đã thực hiện Check-in thành công cho đơn đặt phòng % (Phòng %)', p_MaDatPhong, v_SoPhong;
 END;
@@ -406,13 +599,14 @@ $$;
 
 
 -- ----------------------------------------------------------------------------
--- PROCEDURE 2: Quy trình Check-out, tính toán hóa đơn và đóng buồng phòng
+-- PROCEDURE 2: Quy trình Check-out, tính toán hóa đơn, kiểm tra Voucher & hoàn cọc dư
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE PROCEDURE sp_ThucHienCheckOut(
-    p_MaDatPhong   INT,
-    p_MaPTTT       VARCHAR(10),
-    p_MaVoucher    INT,
-    INOUT p_MaHoaDon VARCHAR(20) DEFAULT NULL
+    p_MaDatPhong     INT,
+    p_MaPTTT         VARCHAR(10),
+    p_MaVoucher      INT,
+    INOUT p_MaHoaDon VARCHAR(20) DEFAULT NULL,
+    p_MaNhanVien     INT DEFAULT 1
 )
 LANGUAGE plpgsql
 AS $$
@@ -420,75 +614,161 @@ DECLARE
     v_MaDat VARCHAR(20);
     v_MaPhong INT;
     v_SoPhong VARCHAR(20);
+    v_MaNV INT;
     v_TienPhong NUMERIC(18,2);
     v_TienCoc NUMERIC(18,2);
     v_TienDV NUMERIC(18,2) := 0;
     v_TienGiam NUMERIC(18,2) := 0;
     v_TongCanThu NUMERIC(18,2) := 0;
+    v_HoanCocDu NUMERIC(18,2) := 0;
+    v_LoaiGiam VARCHAR(10);
+    v_GiaTriVoucher NUMERIC(18,2);
+    v_DonToiThieu NUMERIC(18,2);
+    v_NgayBD DATE;
+    v_NgayKT DATE;
+    v_SoLuongVC INT;
+    v_TrangThaiVC BOOLEAN;
+    v_PhuongThucCoc VARCHAR(10);
 BEGIN
     -- 1. Lấy thông tin đơn đặt phòng
-    SELECT dp.MaDat, dp.MaPhong, p.SoPhong, COALESCE(dp.TongTien, 0), COALESCE(dp.TienCoc, 0)
-    INTO v_MaDat, v_MaPhong, v_SoPhong, v_TienPhong, v_TienCoc
+    SELECT dp.MaDat, dp.MaPhong, p.SoPhong, COALESCE(dp.TongTien, 0), COALESCE(dp.TienCoc, 0), COALESCE(p_MaNhanVien, dp.MaNhanVien, 1)
+    INTO v_MaDat, v_MaPhong, v_SoPhong, v_TienPhong, v_TienCoc, v_MaNV
     FROM DatPhong dp
     JOIN Phong p ON dp.MaPhong = p.MaPhong
-    WHERE dp.MaDatPhong = p_MaDatPhong AND dp.TrangThai = 'Đang ở'
+    WHERE dp.MaDatPhong = p_MaDatPhong AND dp.TrangThai IN ('Đang ở', 'Đã trả')
     FOR UPDATE;
 
     IF NOT FOUND THEN
         RAISE EXCEPTION 'Không tìm thấy đơn đặt phòng đang ở có mã: %!', p_MaDatPhong;
     END IF;
 
-    -- 2. Sinh mã hóa đơn nếu chưa truyền vào (HD-YYYYMMDD-XXXX)
-    IF p_MaHoaDon IS NULL OR p_MaHoaDon = '' THEN
+    IF EXISTS (
+        SELECT 1 FROM HoaDon
+        WHERE MaDatPhong IN (v_MaDat, p_MaDatPhong::TEXT)
+          AND TrangThai = 'Đã thanh toán'
+          AND (p_MaHoaDon IS NULL OR MaHoaDon <> p_MaHoaDon)
+    ) THEN
+        RAISE EXCEPTION 'Đơn đặt phòng % đã được thanh toán trước đó!', v_MaDat;
+    END IF;
+
+    -- 2. Sinh mã hóa đơn nếu chưa truyền vào (HDYYYYMMDDXXXX)
+    IF p_MaHoaDon IS NULL OR btrim(p_MaHoaDon) = '' THEN
         p_MaHoaDon := 'HD' || TO_CHAR(CURRENT_TIMESTAMP, 'YYYYMMDD') || LPAD(p_MaDatPhong::TEXT, 4, '0');
     END IF;
 
-    -- 3. Tính tiền dịch vụ phát sinh (nếu có chi tiết tạm gán)
-    SELECT COALESCE(SUM(ThanhTien), 0) INTO v_TienDV
-    FROM ChiTietHoaDon
-    WHERE MaHoaDon = p_MaHoaDon;
-
-    -- 4. Tính giảm giá voucher (nếu có)
-    IF p_MaVoucher IS NOT NULL THEN
-        SELECT 
-            CASE 
-                WHEN LoaiGiam = 'PhanTram' THEN LEAST(v_TienPhong * (GiaTri / 100), v_TienPhong)
-                ELSE LEAST(GiaTri, v_TienPhong)
-            END
-        INTO v_TienGiam
-        FROM Voucher
-        WHERE MaVoucher = p_MaVoucher AND TrangThai = TRUE;
-    END IF;
-
-    -- 5. Tổng tiền thực tế cần thanh toán
-    v_TongCanThu := GREATEST(0, (v_TienPhong + v_TienDV - v_TienCoc - v_TienGiam));
-
-    -- 6. Ghi nhận hóa đơn thanh toán
+    -- 3. Tạo trước bản ghi HoaDon đích và gộp các dòng dịch vụ từ hóa đơn tạm 'Chưa thanh toán'
     INSERT INTO HoaDon (
         MaHoaDon, MaDatPhong, NgayLap, NgayThanhToan,
         TienPhong, TienDichVu, TienGiamGia, TienDatCoc, TongTien,
         MaPTTT, MaVoucher, TrangThai
     )
     VALUES (
-        p_MaHoaDon, v_MaDat, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP,
-        v_TienPhong, v_TienDV, v_TienGiam, v_TienCoc, v_TongCanThu,
-        COALESCE(p_MaPTTT, 'TM'), p_MaVoucher, 'Đã thanh toán'
+        p_MaHoaDon, v_MaDat, CURRENT_TIMESTAMP, NULL,
+        v_TienPhong, 0, 0, v_TienCoc, 0,
+        COALESCE(p_MaPTTT, 'TM'), NULL, 'Chưa thanh toán'
     )
-    ON CONFLICT (MaHoaDon) DO UPDATE 
-    SET NgayThanhToan = CURRENT_TIMESTAMP,
-        TongTien = EXCLUDED.TongTien,
-        TrangThai = 'Đã thanh toán';
+    ON CONFLICT (MaHoaDon) DO NOTHING;
 
-    -- 7. Cập nhật đơn đặt phòng sang 'Đã trả'
+    UPDATE ChiTietHoaDon
+    SET MaHoaDon = p_MaHoaDon
+    WHERE MaHoaDon IN (
+        SELECT MaHoaDon FROM HoaDon
+        WHERE MaDatPhong IN (v_MaDat, p_MaDatPhong::TEXT)
+          AND TrangThai = 'Chưa thanh toán'
+          AND MaHoaDon <> p_MaHoaDon
+    );
+
+    DELETE FROM HoaDon
+    WHERE MaDatPhong IN (v_MaDat, p_MaDatPhong::TEXT)
+      AND TrangThai = 'Chưa thanh toán'
+      AND MaHoaDon <> p_MaHoaDon;
+
+    SELECT COALESCE(SUM(ThanhTien), 0) INTO v_TienDV
+    FROM ChiTietHoaDon
+    WHERE MaHoaDon = p_MaHoaDon;
+
+    -- 4. Kiểm tra đầy đủ điều kiện của Voucher (TrangThai, NgayBatDau, NgayHetHan, SoLuong, DonToiThieu)
+    IF p_MaVoucher IS NOT NULL THEN
+        SELECT LoaiGiam, GiaTri, COALESCE(DonToiThieu, 0), NgayBatDau, NgayHetHan, SoLuong, TrangThai
+        INTO v_LoaiGiam, v_GiaTriVoucher, v_DonToiThieu, v_NgayBD, v_NgayKT, v_SoLuongVC, v_TrangThaiVC
+        FROM Voucher
+        WHERE MaVoucher = p_MaVoucher
+        FOR UPDATE;
+
+        IF NOT FOUND THEN
+            RAISE EXCEPTION 'Mã khuyến mãi (Voucher %) không tồn tại!', p_MaVoucher;
+        END IF;
+
+        IF v_TrangThaiVC = FALSE THEN
+            RAISE EXCEPTION 'Mã khuyến mãi hiện đang bị khóa hoặc ngừng áp dụng!';
+        END IF;
+
+        IF CURRENT_DATE < v_NgayBD OR CURRENT_DATE > v_NgayKT THEN
+            RAISE EXCEPTION 'Mã khuyến mãi nằm ngoài thời hạn áp dụng (% đến %)!', v_NgayBD, v_NgayKT;
+        END IF;
+
+        IF v_SoLuongVC IS NOT NULL AND v_SoLuongVC <= 0 THEN
+            RAISE EXCEPTION 'Mã khuyến mãi đã hết lượt sử dụng!';
+        END IF;
+
+        IF (v_TienPhong + v_TienDV) < v_DonToiThieu THEN
+            RAISE EXCEPTION 'Tổng tiền phòng & dịch vụ (%) chưa đạt mức đơn tối thiểu (%) của Voucher!',
+                (v_TienPhong + v_TienDV), v_DonToiThieu;
+        END IF;
+
+        IF v_LoaiGiam = 'PhanTram' THEN
+            v_TienGiam := LEAST((v_TienPhong + v_TienDV) * (v_GiaTriVoucher / 100.0), (v_TienPhong + v_TienDV));
+        ELSE
+            v_TienGiam := LEAST(v_GiaTriVoucher, (v_TienPhong + v_TienDV));
+        END IF;
+    END IF;
+
+    -- 5. Tổng tiền thực tế cần thanh toán & khoản hoàn cọc dư
+    v_TongCanThu := GREATEST(0, (v_TienPhong + v_TienDV - v_TienCoc - v_TienGiam));
+    v_HoanCocDu  := GREATEST(0, v_TienCoc - (v_TienPhong + v_TienDV - v_TienGiam));
+
+    -- 6. Cập nhật chốt hóa đơn thanh toán (sẽ kích hoạt trg_XuLyVoucherHoaDon nếu có MaVoucher)
+    UPDATE HoaDon
+    SET MaDatPhong    = v_MaDat,
+        NgayThanhToan = CURRENT_TIMESTAMP,
+        TienPhong     = v_TienPhong,
+        TienDichVu    = v_TienDV,
+        TienGiamGia   = v_TienGiam,
+        TienDatCoc    = v_TienCoc,
+        TongTien      = v_TongCanThu,
+        MaPTTT        = COALESCE(p_MaPTTT, 'TM'),
+        MaVoucher     = p_MaVoucher,
+        TrangThai     = 'Đã thanh toán'
+    WHERE MaHoaDon = p_MaHoaDon;
+
+    -- 7. Ghi sổ hoàn cọc dư vào bảng PhieuDatCoc (đồng bộ với HoaDonDAL.LuuHoaDonVaCheckOut)
+    IF v_HoanCocDu > 0 THEN
+        v_PhuongThucCoc := CASE
+            WHEN COALESCE(p_MaPTTT, 'TM') IN ('CK', 'VNPAY', 'MOMO') THEN 'CK'
+            WHEN COALESCE(p_MaPTTT, 'TM') IN ('POS', 'APPLEPAY') THEN 'POS'
+            ELSE 'TM'
+        END;
+
+        INSERT INTO PhieuDatCoc (MaDatPhong, LoaiGiaoDich, SoTien, PhuongThuc, MaNhanVien, GhiChu)
+        VALUES (
+            p_MaDatPhong,
+            'Hoan',
+            v_HoanCocDu,
+            v_PhuongThucCoc,
+            v_MaNV,
+            'Hoàn cọc dư khi thanh toán ' || p_MaHoaDon || ' qua ' || COALESCE(p_MaPTTT, 'TM')
+        );
+    END IF;
+
+    -- 8. Cập nhật đơn đặt phòng sang 'Đã trả' và giữ Phong.TinhTrang = 'Hoạt động'
     UPDATE DatPhong
     SET TrangThai = 'Đã trả',
-        GioTraThucTe = CURRENT_TIMESTAMP
+        GioTraThucTe = COALESCE(GioTraThucTe, CURRENT_TIMESTAMP)
     WHERE MaDatPhong = p_MaDatPhong;
 
-    -- 8. Cập nhật phòng sang 'Chờ dọn dẹp'
     UPDATE Phong
-    SET TinhTrang = 'Chờ dọn dẹp'
-    WHERE MaPhong = v_MaPhong;
+    SET TinhTrang = 'Hoạt động'
+    WHERE MaPhong = v_MaPhong AND TinhTrang <> 'Bảo trì';
 
     RAISE NOTICE 'Đã Check-out và xuất hóa đơn % thành công cho phòng %. Tổng thu: % VNĐ', 
         p_MaHoaDon, v_SoPhong, v_TongCanThu;
@@ -521,29 +801,36 @@ ORDER BY ThangNam DESC;
 
 -- ----------------------------------------------------------------------------
 -- VIEW 2: Tỷ lệ lấp đầy phòng (Occupancy Rate) theo từng Loại phòng
+-- (Đã sửa Lỗi 1.3: Đếm phòng đang có khách dựa trên đơn lưu trú 'Đang ở' trong DatPhong)
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_KhaiThacCongSuatLoaiPhong AS
 SELECT 
     lp.MaLoai,
     lp.TenLoai,
     lp.GiaMotDem,
-    COUNT(DISTINCT p.MaPhong)                                AS TongSoPhong,
-    COUNT(DISTINCT CASE WHEN p.TinhTrang = 'Đang sử dụng' THEN p.MaPhong END) AS SoPhongDangCoKhach,
-    COUNT(DISTINCT CASE WHEN p.TinhTrang = 'Chờ dọn dẹp' THEN p.MaPhong END)  AS SoPhongChoDon,
-    COUNT(DISTINCT CASE WHEN p.TinhTrang IN ('Hoạt động', 'Trống') THEN p.MaPhong END) AS SoPhongSanSangDonKhach,
-    ROUND(
-        COUNT(DISTINCT CASE WHEN p.TinhTrang = 'Đang sử dụng' THEN p.MaPhong END)::NUMERIC / 
+    COUNT(DISTINCT p.MaPhong) AS TongSoPhong,
+    COUNT(DISTINCT CASE WHEN dp_active.MaPhong IS NOT NULL THEN p.MaPhong END) AS SoPhongDangCoKhach,
+    COUNT(DISTINCT CASE WHEN p.TinhTrang = 'Bảo trì' THEN p.MaPhong END) AS SoPhongChoDon,
+    COUNT(DISTINCT CASE WHEN p.TinhTrang = 'Hoạt động' AND dp_active.MaPhong IS NULL THEN p.MaPhong END) AS SoPhongSanSangDonKhach,
+    COALESCE(ROUND(
+        COUNT(DISTINCT CASE WHEN dp_active.MaPhong IS NOT NULL THEN p.MaPhong END)::NUMERIC / 
         NULLIF(COUNT(DISTINCT p.MaPhong), 0) * 100, 
         2
-    ) AS TyLeLapDayPhanTram
+    ), 0.00) AS TyLeLapDayPhanTram
 FROM LoaiPhong lp
 LEFT JOIN Phong p ON lp.MaLoai = p.MaLoai
+LEFT JOIN (
+    SELECT DISTINCT MaPhong
+    FROM DatPhong
+    WHERE TrangThai = 'Đang ở'
+) dp_active ON dp_active.MaPhong = p.MaPhong
 GROUP BY lp.MaLoai, lp.TenLoai, lp.GiaMotDem
 ORDER BY lp.MaLoai;
 
 
 -- ----------------------------------------------------------------------------
 -- VIEW 3: Xếp hạng Dịch vụ phụ trợ được khách hàng ưa chuộng nhất
+-- (Đã sửa Lỗi 1.5: Chỉ cộng dịch vụ thuộc các hóa đơn có TrangThai = 'Đã thanh toán')
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_KhaiThacTopDichVu AS
 SELECT 
@@ -555,13 +842,17 @@ SELECT
     COALESCE(SUM(ct.ThanhTien), 0)                           AS TongDoanhThuDichVu,
     DENSE_RANK() OVER (ORDER BY COALESCE(SUM(ct.ThanhTien), 0) DESC) AS XepHangDoanhThu
 FROM DichVu dv
-LEFT JOIN ChiTietHoaDon ct ON dv.MaDichVu = ct.MaDichVu
+LEFT JOIN (
+    ChiTietHoaDon ct
+    INNER JOIN HoaDon hd ON ct.MaHoaDon = hd.MaHoaDon AND hd.TrangThai = 'Đã thanh toán'
+) ON dv.MaDichVu = ct.MaDichVu
 GROUP BY dv.MaDichVu, dv.TenDichVu, dv.LoaiDichVu, dv.DonGia
 ORDER BY TongDoanhThuDichVu DESC;
 
 
 -- ----------------------------------------------------------------------------
 -- VIEW 4: Phân khúc khách hàng VIP & Thân thiết (RFM Analytics)
+-- (Đã sửa Lỗi 1.6: Loại trừ đơn 'Đã hủy' và dùng COUNT(DISTINCT dp.MaDatPhong))
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_KhaiThacKhachHangVIP AS
 SELECT 
@@ -570,17 +861,17 @@ SELECT
     kh.HoTen,
     kh.SoDienThoai,
     kh.QuocTich,
-    COUNT(dp.MaDatPhong)                                     AS SoLanDatPhong,
+    COUNT(DISTINCT dp.MaDatPhong)                            AS SoLanDatPhong,
     MAX(dp.NgayNhan)                                         AS LanDatPhongGanNhat,
     COALESCE(SUM(hd.TongTien), 0)                            AS TongChiTieu,
     CASE 
         WHEN COALESCE(SUM(hd.TongTien), 0) >= 15000000 THEN '💎 VIP Kim Cương'
         WHEN COALESCE(SUM(hd.TongTien), 0) >= 7000000  THEN '🥇 VIP Vàng'
-        WHEN COUNT(dp.MaDatPhong) >= 3                 THEN '🥈 Thân thiết'
+        WHEN COUNT(DISTINCT dp.MaDatPhong) >= 3        THEN '🥈 Thân thiết'
         ELSE 'Khách mới'
     END AS HangThanhVien
 FROM KhachHang kh
-LEFT JOIN DatPhong dp ON kh.MaKH = dp.MaKH
+LEFT JOIN DatPhong dp ON kh.MaKH = dp.MaKH AND dp.TrangThai IN ('Đang ở', 'Đã trả')
 LEFT JOIN HoaDon hd ON (hd.MaDatPhong = dp.MaDat OR CAST(dp.MaDatPhong AS TEXT) = hd.MaDatPhong) AND hd.TrangThai = 'Đã thanh toán'
 GROUP BY kh.MaKH, kh.MaKHHienThi, kh.HoTen, kh.SoDienThoai, kh.QuocTich
 ORDER BY TongChiTieu DESC;
@@ -588,23 +879,23 @@ ORDER BY TongChiTieu DESC;
 
 -- ----------------------------------------------------------------------------
 -- VIEW 5: Bảng tổng quan Dashboard cho Giám đốc / Lễ tân ca trực
+-- (Đã sửa Lỗi 1.3: Đếm PhongDangO từ DatPhong.TrangThai = 'Đang ở' và lọc HoaDon 'Đã thanh toán')
 -- ----------------------------------------------------------------------------
 CREATE OR REPLACE VIEW vw_KhaiThacDashboardTongHop AS
 SELECT 
-    (SELECT COUNT(*) FROM Phong)                                                AS TongSoPhong,
-    (SELECT COUNT(*) FROM Phong WHERE TinhTrang = 'Đang sử dụng')               AS PhongDangO,
-    (SELECT COUNT(*) FROM Phong WHERE TinhTrang = 'Chờ dọn dẹp')                AS PhongChoDon,
-    (SELECT COUNT(*) FROM DatPhong WHERE TrangThai = 'Đã đặt' AND NgayNhan = CURRENT_DATE) AS CheckInHomNay,
-    (SELECT COUNT(*) FROM DatPhong WHERE TrangThai = 'Đang ở' AND NgayTra = CURRENT_DATE)  AS CheckOutHomNay,
-    (SELECT COALESCE(SUM(TongTien), 0) FROM HoaDon WHERE CAST(NgayThanhToan AS DATE) = CURRENT_DATE) AS DoanhThuHomNay,
-    (SELECT COALESCE(SUM(TongTien), 0) FROM HoaDon WHERE DATE_TRUNC('month', NgayThanhToan) = DATE_TRUNC('month', CURRENT_DATE)) AS DoanhThuThangNay;
+    (SELECT COUNT(*) FROM Phong)                                                                 AS TongSoPhong,
+    (SELECT COUNT(DISTINCT MaPhong) FROM DatPhong WHERE TrangThai = 'Đang ở')                    AS PhongDangO,
+    (SELECT COUNT(*) FROM Phong WHERE TinhTrang = 'Bảo trì')                                     AS PhongChoDon,
+    (SELECT COUNT(*) FROM DatPhong WHERE TrangThai = 'Đã đặt' AND NgayNhan = CURRENT_DATE)       AS CheckInHomNay,
+    (SELECT COUNT(*) FROM DatPhong WHERE TrangThai = 'Đang ở' AND NgayTra = CURRENT_DATE)        AS CheckOutHomNay,
+    (SELECT COALESCE(SUM(TongTien), 0) FROM HoaDon WHERE TrangThai = 'Đã thanh toán' AND CAST(NgayThanhToan AS DATE) = CURRENT_DATE) AS DoanhThuHomNay,
+    (SELECT COALESCE(SUM(TongTien), 0) FROM HoaDon WHERE TrangThai = 'Đã thanh toán' AND DATE_TRUNC('month', NgayThanhToan) = DATE_TRUNC('month', CURRENT_DATE)) AS DoanhThuThangNay;
 
 
 -- ============================================================================
 -- PHẦN 5: TỐI ƯU HÓA TRUY VẤN VỚI CHỈ MỤC (INDEXING & PERFORMANCE TUNING)
 -- ============================================================================
 
--- Đánh chỉ mục B-Tree trên các trường khóa ngoại, tìm kiếm và lọc thời gian
 CREATE INDEX IF NOT EXISTS IX_DatPhong_NgayNhan_NgayTra 
     ON DatPhong (NgayNhan, NgayTra, TrangThai);
 
@@ -625,48 +916,29 @@ CREATE INDEX IF NOT EXISTS IX_Voucher_Code_HieuLuc
 
 
 -- ============================================================================
--- PHẦN 6: BẢO MẬT PHÂN QUYỀN (ROLE-BASED ACCESS CONTROL - RBAC)
+-- PHẦN 6: BẢO MẬT PHÂN QUYỀN (RBAC & ROW-LEVEL SECURITY)
+-- (Đã sửa Lỗi 1.7: Thay bảng LichSuLuuTru bằng PhieuDatCoc, NhatKyHeThong, NhatKyBaoMat)
 -- ============================================================================
 
 DO $$
 BEGIN
-    -- Tạo Role Quản Trị Viên (Admin)
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'role_quan_tri_ks') THEN
         CREATE ROLE role_quan_tri_ks WITH LOGIN PASSWORD 'Admin@Hotel2026';
     END IF;
 
-    -- Tạo Role Nhân Viên Lễ Tân
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'role_le_tan_ks') THEN
         CREATE ROLE role_le_tan_ks WITH LOGIN PASSWORD 'LeTan@Hotel2026';
     END IF;
 END $$;
 
--- Phân quyền cho Quản Trị Viên: Toàn quyền trên Schema public
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO role_quan_tri_ks;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO role_quan_tri_ks;
 GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO role_quan_tri_ks;
 
--- Phân quyền cho Lễ Tân: Chỉ quyền nghiệp vụ, không quyền phá hủy cấu trúc
-GRANT SELECT, INSERT, UPDATE ON DatPhong, KhachHang, HoaDon, ChiTietHoaDon, Phong, LichSuLuuTru TO role_le_tan_ks;
+GRANT SELECT, INSERT, UPDATE ON DatPhong, KhachHang, HoaDon, ChiTietHoaDon, Phong, PhieuDatCoc, NhatKyHeThong, NhatKyBaoMat TO role_le_tan_ks;
 GRANT SELECT ON LoaiPhong, DichVu, Voucher, PhuongThucThanhToan, vw_KhaiThacDoanhThuTheoThang, vw_KhaiThacCongSuatLoaiPhong, vw_KhaiThacTopDichVu, vw_KhaiThacKhachHangVIP, vw_KhaiThacDashboardTongHop TO role_le_tan_ks;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO role_le_tan_ks;
 GRANT EXECUTE ON FUNCTION fn_TimPhongTrong, fn_TinhToanChiPhiDatPhong TO role_le_tan_ks;
 GRANT EXECUTE ON PROCEDURE sp_ThucHienCheckIn, sp_ThucHienCheckOut TO role_le_tan_ks;
 
--- Ngăn chặn Lễ tân xem cột mật khẩu trong bảng TaiKhoan
 REVOKE ALL ON TaiKhoan FROM role_le_tan_ks;
-
--- ============================================================================
--- THÔNG BÁO HOÀN THÀNH KỊCH BẢN CHUYÊN ĐỀ 1
--- ============================================================================
-DO $$
-BEGIN
-    RAISE NOTICE '=============================================================';
-    RAISE NOTICE '🎉 KỊCH BẢN NÂNG CAO CHUYÊN ĐỀ 1: KHAI THÁC CSDL ĐÃ ĐƯỢC THIẾT LẬP THÀNH CÔNG!';
-    RAISE NOTICE '• 4 Triggers toàn vẹn (Đồng bộ phòng, Trừ voucher, Tự tính tiền, Chống double booking)';
-    RAISE NOTICE '• 2 Functions & 2 Stored Procedures nghiệp vụ (Tìm phòng, Tính giá, Check-in, Check-out)';
-    RAISE NOTICE '• 5 Views phân tích khai thác số liệu (Doanh thu, Công suất, Top dịch vụ, Khách VIP, Dashboard)';
-    RAISE NOTICE '• 6 Indexes tối ưu hóa truy vấn hiệu năng cao';
-    RAISE NOTICE '• Phân quyền RBAC bảo mật hệ thống (Admin vs Lễ Tân)';
-    RAISE NOTICE '=============================================================';
-END $$;
